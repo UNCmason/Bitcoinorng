@@ -55,11 +55,28 @@ a:focus,button:focus{outline:none}
 .rp{position:absolute;border-radius:50%;background:rgba(255,255,255,.32);transform:scale(0);animation:rp .55s ease-out forwards;pointer-events:none}
 .p .rp{background:rgba(255,255,255,.5)}
 @keyframes rp{to{transform:scale(1);opacity:0}}
+.card.fq{padding:0;overflow:hidden;display:flex;flex-direction:column;max-height:88vh;text-align:left;width:min(560px,100%)}
+.fqh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:18px 20px 12px}
+.fqh h2{margin:0;font:900 22px Montserrat,sans-serif}
+.btn.cl{width:40px;height:40px;padding:0;margin:0;border-radius:50%;flex:none;font-size:15px}
+#fs{margin:0 20px 8px;width:calc(100% - 40px);padding:12px 16px;border-radius:999px;border:1px solid var(--line);background:#100d0a;color:#f6f1ea;font:500 14px Montserrat,sans-serif;outline:none;-webkit-user-select:text;user-select:text}
+#fs:focus{border-color:var(--btc)}
+.fqb{overflow-y:auto;padding:2px 20px 22px;-webkit-overflow-scrolling:touch}
+.fqc{font:700 11px 'JetBrains Mono',monospace;letter-spacing:.14em;color:var(--btc);margin:18px 0 4px}
+.fq details{border-bottom:1px solid var(--line)}
+.fq summary{cursor:pointer;list-style:none;padding:13px 30px 13px 0;font-weight:700;font-size:14.5px;position:relative}
+.fq summary::-webkit-details-marker{display:none}
+.fq summary:after{content:"+";position:absolute;right:4px;top:9px;font-size:22px;color:var(--btc);transition:transform .2s}
+.fq details[open] summary:after{transform:rotate(45deg)}
+.fq details p{margin:0 0 14px;color:#cfc5b8;font-size:14px;line-height:1.6;text-align:left}
+.fq a{color:var(--btc2)}
+#fq{z-index:8}
 </style>
 </head>
 <body>
 <canvas id="c"></canvas>
 <button class="mu" id="mu" type="button" aria-label="Sound on or off">🔊</button>
+<button class="mu" id="hb" type="button" aria-label="How to play and FAQ" style="right:122px;font-size:18px;font-weight:800">?</button>
 <button class="mu" id="pb" type="button" aria-label="Pause" style="right:68px;font-size:15px">❚❚</button>
 <div class="ov hide" id="pz"><div class="card"><h1>Paused</h1><button class="btn p" id="rs">Resume</button><button class="btn" id="qt">End run</button></div></div>
 <div class="hud"><div><small>SATS</small><b id="sc">0</b><span id="mx"></span></div><div class="mid"><small id="lv">LV 1/100</small><div class="bar"><i id="pg"></i></div></div><div class="hp" id="hp"></div></div>
@@ -68,7 +85,7 @@ a:focus,button:focus{outline:none}
   <div class="em">🍊</div><h1>Orange <span class="g">Slice</span></h1>
   <p>Slice oranges. Stack sats. Beat 21 worlds. Then keep going.</p><div class="sm" id="mm" style="margin:-8px 0 14px"></div>
   <ul class="tips"><li>👆 Swipe to slice. Chain 3+ in one swipe for a combo.</li><li>₿ Golden orange = 21 sats and Bitcoin Time (slow motion).</li><li>💣 Avoid FUD bombs. Missing an orange costs a life.</li><li>🔥 Slice 10 in a row without a miss to raise your multiplier, up to ×5.</li><li>⚠️ Dodge FUD, FEAR, FIAT and fake gold. Grab ⚡ Lightning and 🔒 Cold Storage.</li><li>👑 Every world ends with a boss orange.</li></ul>
-  <button class="btn p" id="go">Start</button><button class="btn hide" id="go1">Restart from Level 1</button>
+  <button class="btn p" id="go">Start</button><button class="btn hide" id="go1">Restart from Level 1</button><button class="btn" id="fqm" type="button">How to play &amp; FAQ</button>
   <a class="back" href="/">← bitcoinorng.xyz</a>
 </div></div>
 
@@ -81,6 +98,55 @@ a:focus,button:focus{outline:none}
   <a class="back" href="/">← bitcoinorng.xyz</a>
 </div></div>
 
+<div class="ov hide" id="fq"><div class="card fq" role="dialog" aria-label="FAQ">
+<div class="fqh"><h2>How to play</h2><button class="btn cl" id="fx" type="button" aria-label="Close">✕</button></div>
+<input id="fs" type="search" placeholder="Search the FAQ" autocomplete="off">
+<div class="fqb">
+<div class="fqc">THE BASICS</div>
+<details><summary>How do I play?</summary><p>Swipe your finger (or hold and drag your mouse) across oranges to slice them. Slice enough to clear a level, and do not let them fall off the bottom.</p></details>
+<details><summary>How many lives do I have?</summary><p>You start with 3 hearts (top right). You gain a heart at the start of each new world, up to a maximum of 5.</p></details>
+<details><summary>When do I lose a life?</summary><p>When a regular orange, a mini orange or the boss orange falls off the bottom, or when you slice a FUD bomb or fake gold. Anything else falling past costs nothing.</p></details>
+<details><summary>Does it work on desktop?</summary><p>Yes. Hold the left mouse button and drag across the oranges.</p></details>
+<details><summary>How do I pause?</summary><p>Tap ❚❚ in the bottom corner. The game also pauses by itself if you switch apps or tabs.</p></details>
+<details><summary>How do I turn the sound off?</summary><p>Tap 🔊 in the bottom corner. Your choice is remembered. If a phone plays nothing, tap the screen once and check that silent mode is off.</p></details>
+<div class="fqc">ORANGES AND POWER-UPS</div>
+<details><summary>What are the different oranges?</summary><p>Regular oranges are worth 1 sat. Mini oranges (from level 8) are small and fast, worth 2 sats. Golden ₿ oranges are worth 21 sats.</p></details>
+<details><summary>What does the golden ₿ orange do?</summary><p>It gives 21 sats and starts Bitcoin Time: 3 seconds of slow motion with a golden trail.</p></details>
+<details><summary>What is the ⚡ Lightning orange?</summary><p>It appears from World 2. Slice it and lightning zaps everything on screen. Oranges are sliced for points and hazards are wiped out for a couple of sats each.</p></details>
+<details><summary>What is 🔒 Cold Storage?</summary><p>It appears from World 6. Slice it to get a shield (🛡 next to your hearts) that blocks the next time you would lose a life.</p></details>
+<div class="fqc">THINGS TO AVOID</div>
+<details><summary>What is the FUD bomb?</summary><p>A dark bomb that appears from level 3. Slicing it costs you a life.</p></details>
+<details><summary>What is FEAR?</summary><p>A purple orange from World 3. Slicing it rolls in a fog for 5 seconds so you only see around your finger, and it resets your streak. It does not cost a life.</p></details>
+<details><summary>What is FIAT?</summary><p>A green orange from World 4. Slicing it inflates away 10% of your sats. It does not cost a life.</p></details>
+<details><summary>How do I tell real gold from fake gold?</summary><p>Real gold shows a ₿. Fake gold (from World 5) shows a $ and looks slightly greener. Slicing the fake costs a life.</p></details>
+<details><summary>Can I just let hazards fall?</summary><p>Yes. Letting any hazard fall past costs nothing, so when in doubt, do not slice it.</p></details>
+<div class="fqc">SCORING</div>
+<details><summary>What are sats?</summary><p>Points. They are named after Bitcoin's smallest unit, but they are only a score in this game. They are not real Bitcoin.</p></details>
+<details><summary>What is a combo?</summary><p>Slice 3 or more in one swipe and every extra slice earns +1 sat.</p></details>
+<details><summary>What is the streak multiplier?</summary><p>Slice 10 in a row without a miss for ×2, 20 for ×3, 30 for ×4 and 40 for ×5. It resets when you lose a life or hit FEAR.</p></details>
+<details><summary>What is ORNG Frenzy?</summary><p>Every 25 slices you get 6 seconds of non-stop oranges, no bombs and double sats. It does not happen on boss levels.</p></details>
+<details><summary>What are Halving levels?</summary><p>Level 5 of every world. You get half as many oranges, but every one is worth double.</p></details>
+<details><summary>What are the sats milestones?</summary><p>A banner pops at 21, 210, 2,100, 21,000 and 210,000 sats.</p></details>
+<div class="fqc">LEVELS AND PROGRESS</div>
+<details><summary>How many levels are there?</summary><p>210 levels in 21 worlds of 10 levels each. Every world has a Bitcoin theme and ends with a boss.</p></details>
+<details><summary>How do I clear a level?</summary><p>Slice a set number of oranges. It starts at 6 and rises to 30. On boss levels you clear it by defeating the boss.</p></details>
+<details><summary>How do I beat a boss?</summary><p>Swipe through the big orange again and again until its health bar is empty. It falls slowly. If it drops off the bottom you lose a life and it returns with the same health.</p></details>
+<details><summary>What happens after level 210?</summary><p>Endless mode unlocks. The worlds keep coming as Hyperbitcoinization, with no finish line.</p></details>
+<details><summary>What is a checkpoint?</summary><p>After a game over you can continue from the first level of the world you reached. You can also restart from Level 1 whenever you like.</p></details>
+<details><summary>Is my progress saved?</summary><p>Yes, on your own device and browser. There is no account. Clearing your browser data, or switching browser or device, starts you fresh.</p></details>
+<details><summary>What are the ranks?</summary><p>Pulp Rookie, Zest Hunter (Level 20), Juice Master (50), Orange Whale (100), Satoshi's Chef (150) and Bitcoin Orange (clear all 210 levels).</p></details>
+<details><summary>What is the daily streak?</summary><p>The 🔥 count on the menu shows how many days in a row you have played.</p></details>
+<div class="fqc">SHARING AND $ORNG</div>
+<details><summary>How do I share my score?</summary><p>After a run, tap Share on X. It opens a ready-made post with your rank, level and sats that you can edit before posting. The Follow button right under it takes you to @_O_R_N_G_.</p></details>
+<details><summary>Is there a leaderboard?</summary><p>Not yet. For now, share your run on X to compare with others.</p></details>
+<details><summary>Do I win real crypto for playing?</summary><p>No. Sats in the game are only points. The game gives out no rewards or payments and never asks you to connect a wallet.</p></details>
+<details><summary>Is this financial advice?</summary><p>No. $ORNG is a meme coin with no intrinsic value or expectation of financial return. Crypto is very volatile and you can lose everything you put in. Do your own research.</p></details>
+<details><summary>Where can I get $ORNG?</summary><p>It launched on <a href="https://bonsonbtc.fun/launch?t=ORNG" target="_blank" rel="noopener">bonsonbtc.fun</a>. The contract address is on <a href="/">bitcoinorng.xyz</a>. Always check it before you buy.</p></details>
+<div class="fqc">TROUBLESHOOTING</div>
+<details><summary>The game feels slow or laggy.</summary><p>Close other tabs and apps, reload the page and make sure your browser is up to date.</p></details>
+<details><summary>I found a bug or have an idea.</summary><p>Post it on X and tag @_O_R_N_G_, with a screenshot if you can.</p></details>
+<p id="fn" style="display:none;text-align:center;padding:20px 0;color:#a79c8e">Nothing found. Try another word.</p>
+</div></div></div>
 <script>
 (function(){
 var $=function(i){return document.getElementById(i)},R=Math.random;
@@ -304,6 +370,13 @@ function over(win){st='over';if(win)SFX.win();else SFX.over();var L=lvl;var nb=s
 $('go').onclick=$('go2').onclick=function(){start(cp())};
 $('go1').onclick=$('go3').onclick=function(){start(1)};
 var mu=$('mu');function mt(){mu.textContent=muted?'🔇':'🔊'}mt();mu.onclick=function(){muted=!muted;try{localStorage.setItem('orngMute',muted?'1':'0')}catch(e){}mt();ac();SFX.click()};
+function filt(q){q=q.toLowerCase().trim();var any=false;[].forEach.call(document.querySelectorAll('#fq details'),function(d){var m=!q||d.textContent.toLowerCase().indexOf(q)>-1;d.style.display=m?'':'none';if(m)any=true;d.open=!!q&&m&&q.length>2});
+ [].forEach.call(document.querySelectorAll('#fq .fqc'),function(h){var n=h.nextElementSibling,v=false;while(n&&n.tagName==='DETAILS'){if(n.style.display!=='none')v=true;n=n.nextElementSibling}h.style.display=v?'':'none'});$('fn').style.display=any?'none':'block'}
+function fq(on){show('fq',on);if(on){if(st==='play')pause();$('fs').value='';filt('');$('fq').scrollTop=0}}
+$('hb').onclick=$('fqm').onclick=function(){SFX.click();fq(1)};$('fx').onclick=function(){fq(0)};
+$('fq').addEventListener('pointerdown',function(e){if(e.target===$('fq'))fq(0)});
+$('fs').addEventListener('input',function(){filt(this.value)});
+document.addEventListener('keydown',function(e){if(e.key==='Escape')fq(0)});
 function pause(){if(st!=='play')return;st='pause';sw.on=0;show('pz',1)}
 $('pb').onclick=pause;$('rs').onclick=function(){show('pz',0);st='play';ac();SFX.click()};$('qt').onclick=function(){show('pz',0);over(false)};
 document.addEventListener('visibilitychange',function(){if(document.hidden)pause()});
