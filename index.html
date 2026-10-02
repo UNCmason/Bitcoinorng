@@ -83,6 +83,19 @@ nav a.on{color:var(--fg)}nav a.on i{background:rgba(247,147,26,.28);color:var(--
 nav svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .js .rv{opacity:0;transform:translateY(22px);transition:opacity .7s ease,transform .7s ease}.js .rv.in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}html{scroll-behavior:auto}.js .rv{opacity:1;transform:none}}
+*{-webkit-tap-highlight-color:transparent}
+a,button{touch-action:manipulation;-webkit-touch-callout:none}
+a:focus,button:focus{outline:none}
+.btn:focus-visible,.ib:focus-visible,nav a:focus-visible,.mu:focus-visible,.vid:focus-visible{outline:2px solid #FFB347;outline-offset:3px}
+.btn,.ib,nav a i{position:relative;overflow:hidden}
+.btn,.ib,.mu,nav a i{-webkit-user-select:none;user-select:none}
+.mu{overflow:hidden}
+.btn{transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .25s,filter .2s,background .2s}
+@media (hover:hover){.btn:hover{transform:translateY(-2px);filter:brightness(1.07)}.btn.t:hover,.ib:hover{background:#2b231b}}
+.btn:active{transform:scale(.96);filter:brightness(.94)}
+.rp{position:absolute;border-radius:50%;background:rgba(255,255,255,.32);transform:scale(0);animation:rp .55s ease-out forwards;pointer-events:none}
+.p .rp{background:rgba(255,255,255,.5)}
+@keyframes rp{to{transform:scale(1);opacity:0}}
 </style>
 </head>
 <body>
@@ -157,6 +170,13 @@ function done(){b.textContent='Copied ✓';setTimeout(function(){b.textContent='
 function fb(){try{var r=document.createRange();r.selectNodeContents(document.getElementById('ca'));var s=getSelection();s.removeAllRanges();s.addRange(r);document.execCommand('copy');s.removeAllRanges();done()}catch(e){}}
 b.addEventListener('click',function(){var t=document.getElementById('ca').textContent;if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(fb)}else{fb()}});
 })();
+</script>
+<script>
+(function(){try{var sel='.btn,nav a i,.ib,.mu';
+document.addEventListener('pointerdown',function(e){var t=e.target.closest&&e.target.closest(sel);if(!t)return;
+ var r=t.getBoundingClientRect(),d=Math.max(r.width,r.height)*2,s=document.createElement('span');
+ s.className='rp';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';
+ t.appendChild(s);setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},600)},{passive:true})}catch(e){}})();
 </script>
 </body>
 </html>

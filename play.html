@@ -42,6 +42,19 @@ h1{font-size:34px;font-weight:900;letter-spacing:-.03em;margin:6px 0}
 .pop{animation:pop .2s}@keyframes pop{50%{transform:scale(1.22)}}
 #mx{font:900 15px Montserrat,sans-serif;color:#fff;margin-left:6px}
 .ov{display:flex!important;overflow-y:auto}.ov.hide{display:none!important}.card{margin:auto}
+*{-webkit-tap-highlight-color:transparent}
+a,button{touch-action:manipulation;-webkit-touch-callout:none}
+a:focus,button:focus{outline:none}
+.btn:focus-visible,.ib:focus-visible,nav a:focus-visible,.mu:focus-visible,.vid:focus-visible{outline:2px solid #FFB347;outline-offset:3px}
+.btn,.ib,nav a i{position:relative;overflow:hidden}
+.btn,.ib,.mu,nav a i{-webkit-user-select:none;user-select:none}
+.mu{overflow:hidden}
+.btn{transition:transform .18s cubic-bezier(.2,.8,.2,1),box-shadow .25s,filter .2s,background .2s}
+@media (hover:hover){.btn:hover{transform:translateY(-2px);filter:brightness(1.07)}.btn.t:hover,.ib:hover{background:#2b231b}}
+.btn:active{transform:scale(.96);filter:brightness(.94)}
+.rp{position:absolute;border-radius:50%;background:rgba(255,255,255,.32);transform:scale(0);animation:rp .55s ease-out forwards;pointer-events:none}
+.p .rp{background:rgba(255,255,255,.5)}
+@keyframes rp{to{transform:scale(1);opacity:0}}
 </style>
 </head>
 <body>
@@ -296,6 +309,13 @@ $('pb').onclick=pause;$('rs').onclick=function(){show('pz',0);st='play';ac();SFX
 document.addEventListener('visibilitychange',function(){if(document.hidden)pause()});
 labels();updHud();requestAnimationFrame(frame);
 })();
+</script>
+<script>
+(function(){try{var sel='.btn,nav a i,.ib,.mu';
+document.addEventListener('pointerdown',function(e){var t=e.target.closest&&e.target.closest(sel);if(!t)return;
+ var r=t.getBoundingClientRect(),d=Math.max(r.width,r.height)*2,s=document.createElement('span');
+ s.className='rp';s.style.cssText='width:'+d+'px;height:'+d+'px;left:'+(e.clientX-r.left-d/2)+'px;top:'+(e.clientY-r.top-d/2)+'px';
+ t.appendChild(s);setTimeout(function(){if(s.parentNode)s.parentNode.removeChild(s)},600)},{passive:true})}catch(e){}})();
 </script>
 </body>
 </html>
