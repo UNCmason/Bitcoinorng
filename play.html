@@ -23,7 +23,7 @@ canvas{position:fixed;inset:0;width:100%;height:100%;touch-action:none;display:b
 .hud b{font:900 26px Montserrat,sans-serif;color:var(--btc2)}
 .mid{text-align:center}.mid small{color:#f6f1ea;font-size:12px}
 .bar{height:8px;border-radius:9px;background:rgba(255,255,255,.12);margin:6px auto 0;max-width:200px;overflow:hidden}.bar i{display:block;height:100%;width:0;background:var(--grad);transition:width .25s}
-.hp{text-align:right;font-size:18px;letter-spacing:2px}
+.hp{text-align:right;font-size:15px;letter-spacing:0;white-space:nowrap}
 .ov{position:fixed;inset:0;z-index:5;display:grid;place-items:center;padding:20px;background:rgba(13,11,9,.8);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .hide{display:none}
 .card{width:min(440px,100%);background:#171310;border:1px solid var(--line);border-radius:32px;padding:28px 24px;text-align:center}
@@ -104,7 +104,7 @@ a:focus,button:focus{outline:none}
 <div class="fqb">
 <div class="fqc">THE BASICS</div>
 <details><summary>How do I play?</summary><p>Swipe your finger (or hold and drag your mouse) across oranges to slice them. Slice enough to clear a level, and do not let them fall off the bottom.</p></details>
-<details><summary>How many lives do I have?</summary><p>You start with 3 hearts (top right). You gain a heart at the start of each new world, up to a maximum of 5.</p></details>
+<details><summary>How many lives do I have?</summary><p>You start with 5 hearts (top right). At the start of each new world you win back one lost heart. 5 is the maximum.</p></details>
 <details><summary>When do I lose a life?</summary><p>When a regular orange, a mini orange or the boss orange falls off the bottom, or when you slice a FUD bomb or fake gold. Anything else falling past costs nothing.</p></details>
 <details><summary>Does it work on desktop?</summary><p>Yes. Hold the left mouse button and drag across the oranges.</p></details>
 <details><summary>How do I pause?</summary><p>Tap ❚❚ in the bottom corner. The game also pauses by itself if you switch apps or tabs.</p></details>
@@ -114,6 +114,7 @@ a:focus,button:focus{outline:none}
 <details><summary>What does the golden ₿ orange do?</summary><p>It gives 21 sats and starts Bitcoin Time: 3 seconds of slow motion with a golden trail.</p></details>
 <details><summary>What is the ⚡ Lightning orange?</summary><p>It appears from World 2. Slice it and lightning zaps everything on screen. Oranges are sliced for points and hazards are wiped out for a couple of sats each.</p></details>
 <details><summary>What is 🔒 Cold Storage?</summary><p>It appears from World 6. Slice it to get a shield (🛡 next to your hearts) that blocks the next time you would lose a life.</p></details>
+<details><summary>What is the BONS orange?</summary><p>It appears from World 7 and is named after bonsonbtc.fun, the launchpad $ORNG launched on. Slice it for BONS Boost: 6 seconds of triple sats while the oranges launch higher and float longer.</p></details>
 <div class="fqc">THINGS TO AVOID</div>
 <details><summary>What is the FUD bomb?</summary><p>A dark bomb that appears from level 3. Slicing it costs you a life.</p></details>
 <details><summary>What is FEAR?</summary><p>A purple orange from World 3. Slicing it rolls in a fog for 5 seconds so you only see around your finger, and it resets your streak. It does not cost a life.</p></details>
@@ -151,15 +152,15 @@ a:focus,button:focus{outline:none}
 (function(){
 var $=function(i){return document.getElementById(i)},R=Math.random;
 var cv=$('c'),cx=cv.getContext('2d'),W,H,S,st='menu';
-var lvl=1,score=0,lives=3,prog=0,need=6,objs=[],hv=[],pt=[],ft=[],tr=[],slowT=0,shake=0,redF=0,bn={t:0,s:''},spT=0,sw={on:0,n:0,lx:0,ly:0},last=performance.now();
+var lvl=1,score=0,lives=5,prog=0,need=6,objs=[],hv=[],pt=[],ft=[],tr=[],slowT=0,shake=0,redF=0,bn={t:0,s:''},spT=0,sw={on:0,n:0,lx:0,ly:0},last=performance.now();
 var best=(function(){try{return JSON.parse(localStorage.getItem('orngSlice'))||{lvl:1,score:0}}catch(e){return{lvl:1,score:0}}})();
 function save(){try{localStorage.setItem('orngSlice',JSON.stringify(best))}catch(e){}}
 var mult=1,str=0,tsCur=1,fren=0,sliceTot=0,nextMs=0,MS=[21,210,2100,21000,210000];
 var WN=['Genesis Block','The Whitepaper','Pizza Day','Hash Rate','The Halving','HODL','Cold Storage','Proof of Work','Lightning','Not Your Keys','Taproot','Stack Sats','Diamond Hands','The Mempool','Difficulty','Full Node','Decentralize','Sound Money','Fixed Supply','21 Million','Bitcoin Orange'];
 var WT=['Block 0. It all starts here.','A peer-to-peer electronic cash system.','10,000 BTC for two pizzas.','Every hash secures the network.','Supply shrinks. Rewards halve.','Hold on for dear life.','Keep your keys offline.','Energy turned into trust.','Instant payments, tiny fees.','Not your keys, not your coins.','Smarter and more private.','Every sat counts.','Hold through the storm.','Waiting in line for a block.','Adjusts every 2,016 blocks.','Do not trust. Verify.','No one in charge.','A fixed supply, forever.','No more, no less.','Only 21 million will ever exist.','Bitcoin is Orange.'];
-var NEWI={11:'NEW: ⚡ Lightning zaps everything on screen',21:'NEW: FEAR rolls in the fog',31:'NEW: FIAT inflates away your sats',41:'NEW: Fake gold. The real one has a ₿',51:'NEW: 🔒 Cold Storage blocks your next hit',211:'210 CLEARED · ENDLESS MODE UNLOCKED'};
-var bolts=[],em=[],sx=0,sy=0,halv=false,fog=0,wf=0,shield=false;
-var CT={b:['#4a4a52','#1a1a1f','#050507'],g:['#FFF0B8','#F7B731','#B8700A'],r:['#FFF4A8','#D6C42A','#7a7410'],f:['#8f7fc0','#3a2d5c','#0d0a18'],p:['#5fc07a','#238046','#0e3a1f'],l:['#F0FDFF','#6FD6FF','#2478B8'],s:['#DCEBFA','#7C9CC2','#2B3F57']};
+var NEWI={11:'NEW: ⚡ Lightning zaps everything on screen',21:'NEW: FEAR rolls in the fog',31:'NEW: FIAT inflates away your sats',41:'NEW: Fake gold. The real one has a ₿',51:'NEW: 🔒 Cold Storage blocks your next hit',61:'NEW: BONS Boost. ×3 sats and floaty oranges',211:'210 CLEARED · ENDLESS MODE UNLOCKED'};
+var bolts=[],em=[],sx=0,sy=0,bons=0,halv=false,fog=0,wf=0,shield=false;
+var CT={b:['#4a4a52','#1a1a1f','#050507'],g:['#FFF0B8','#F7B731','#B8700A'],n:['#FFFFFF','#E9E4DC','#9A948A'],r:['#FFF4A8','#D6C42A','#7a7410'],f:['#8f7fc0','#3a2d5c','#0d0a18'],p:['#5fc07a','#238046','#0e3a1f'],l:['#F0FDFF','#6FD6FF','#2478B8'],s:['#DCEBFA','#7C9CC2','#2B3F57']};
 function vib(ms){if(!muted&&navigator.vibrate){try{navigator.vibrate(ms)}catch(e){}}}
 function rank(l){return l>=211?'Bitcoin Orange':l>=150?"Satoshi's Chef":l>=100?'Orange Whale':l>=50?'Juice Master':l>=20?'Zest Hunter':'Pulp Rookie'}
 function daily(){try{var d=new Date().toISOString().slice(0,10);if(best.day!==d){var y=new Date(Date.now()-864e5).toISOString().slice(0,10);best.ds=best.day===y?(best.ds||0)+1:1;best.day=d;save()}}catch(e){}}
@@ -189,6 +190,7 @@ var SFX={
  zap:function(){noise(.4,.6,5200);tone(1500,.3,'sawtooth',.09,0,260);tone(900,.2,'square',.06,.05,200)},
  fear:function(){tone(190,.5,'sawtooth',.12,0,80);tone(201,.5,'sawtooth',.1,0,84)},
  fiat:function(){noise(.12,.4,1800);tone(520,.22,'square',.08,0,200)},
+ boost:function(){noise(.45,.5,1200);tone(220,.5,'sawtooth',.09,0,1100);arp([523,784,1047],.07,'square',.08)},
  world:function(){arp([392,523,659,784,1047],.08,'triangle',.14)},
  click:function(){tone(660,.07,'triangle',.1,0,880)}
 };
@@ -203,11 +205,11 @@ function addFt(x,y,t,c){ft.push({x:Math.max(50,Math.min(W-50,x)),y:y,t:t,c:c,l:.
 function juice(x,y,n,k,cols){cols=cols||['#F7931A','#FFB347','#FFE3A8'];for(var i=0;i<n;i++){var a=R()*6.28,sp=(80+R()*220)*S*k;pt.push({x:x,y:y,vx:Math.cos(a)*sp,vy:Math.sin(a)*sp-80,l:.5+R()*.5,r:(2+R()*4)*S,c:cols[i%cols.length]})}}
 function halves(o,a){for(var s=-1;s<=1;s+=2){var sp=(110+R()*80)*S;hv.push({x:o.x,y:o.y,r:o.r,vx:o.vx*.6-Math.sin(a)*s*sp,vy:o.vy*.5+Math.cos(a)*s*sp-60*S,rot:a+(s>0?0:Math.PI),vr:s*(2+R()*3),fp:R()*6,fs:3+R()*3,g:o.t==='g'})}}
 function updHud(){var sc=$('sc');if(sc.textContent!=score){sc.textContent=score;sc.classList.remove('pop');void sc.offsetWidth;sc.classList.add('pop')}
- $('mx').textContent=(mult>1?'×'+mult:'')+(fren>0?' 🔥':'');
+ $('mx').textContent=(mult>1?'×'+mult:'')+(fren>0?' 🔥':'')+(bons>0?' 🚀':'');
  while(nextMs<MS.length&&score>=MS[nextMs]){bn={t:1.6,s:MS[nextMs].toLocaleString()+' SATS'};SFX.tier();nextMs++}
  $('lv').textContent='WORLD '+Math.ceil(lvl/10)+' · LV '+lvl+(lvl>210?'':'/210');
  var b=objs.filter(function(z){return z.t==='x'})[0],p=lvl%10===0?(b?1-b.hp/b.mx:0):prog/need;$('pg').style.width=Math.min(100,p*100)+'%';
- var h='';for(var i=0;i<Math.max(lives,3);i++)h+=i<lives?'🧡':'🖤';$('hp').textContent=(shield?'🛡 ':'')+h}
+ var h='';for(var i=0;i<Math.max(lives,5);i++)h+=i<lives?'🧡':'🖤';$('hp').textContent=(shield?'🛡 ':'')+h}
 function beginLvl(){prog=0;need=Math.min(30,6+Math.floor(lvl/4));var b=lvl%10===0,wd=Math.ceil(lvl/10);halv=lvl%10===5;
  bn=lvl%10===1?{t:2.8,s:'WORLD '+wd,u:(WN[wd-1]||'Hyperbitcoinization '+(wd-21)).toUpperCase()+' · '+(WT[wd-1]||'No finish line. Keep stacking.'),v:NEWI[lvl]||''}:b?{t:1.7,s:'BOSS ORANGE'}:halv?{t:2.2,s:'HALVING',u:'Half the oranges. Double the sats.'}:{t:1.5,s:'LEVEL '+lvl};
  if(lvl%10===1&&lvl>1)SFX.world();
@@ -222,12 +224,13 @@ function hit(o,a){var i=objs.indexOf(o);if(i<0)return;
  if(o.t==='r'){objs.splice(i,1);juice(o.x,o.y,16,1,['#D6C42A','#555','#fff']);sw.n=0;SFX.bomb();loseLife('RUGGED',o.x);return}
  if(o.t==='l'){objs.splice(i,1);juice(o.x,o.y,16,1,['#6FD6FF','#fff']);lightning(o);return}
  if(o.t==='s'){objs.splice(i,1);juice(o.x,o.y,16,1,['#9fd0ff','#fff']);shield=true;SFX.tier();addFt(o.x,o.y,'COLD STORAGE','#9fd0ff');updHud();return}
+ if(o.t==='n'){objs.splice(i,1);juice(o.x,o.y,22,1.2,['#ffffff','#F7931A','#FFB347']);bons=6;SFX.boost();addFt(o.x,o.y,'BONS BOOST','#ffffff');bn={t:1.8,s:'BONS BOOST',u:'×3 sats · oranges launch and float'};updHud();return}
  if(o.t==='x'){if(o.cd>0)return;o.cd=.16;SFX.bossHit();o.hp--;o.fl=.12;sw.n++;score+=3;juice(o.x,o.y,8,1);addFt(o.x,o.y-o.r*.5,'ORNG +3','#FFB347');
   if(o.hp<=0){SFX.bossDown();objs.splice(i,1);halves(o,a);juice(o.x,o.y,44,2);score+=50;shake=14;addFt(o.x,o.y,'BOSS DOWN +50','#fff');lvlUp()}
   updHud();return}
  objs.splice(i,1);halves(o,a);juice(o.x,o.y,14,1);sw.n++;SFX.slice(sw.n);vib(8);
  var p=o.t==='g'?21:o.t==='m'?2:1;if(sw.n>=3){p++;if(sw.n===3)addFt(o.x,o.y-50*S,'COMBO','#fff')}
- p=Math.round(p*mult*(fren>0?2:1)*(halv?2:1));score+=p;bump(o.t!=='g');addFt(o.x,o.y,o.t==='g'?'₿ +'+p:'ORNG +'+p,o.t==='g'?'#FFE08A':'#FFB347');
+ p=Math.round(p*mult*(fren>0?2:1)*(halv?2:1)*(bons>0?3:1));score+=p;bump(o.t!=='g');addFt(o.x,o.y,o.t==='g'?'₿ +'+p:'ORNG +'+p,o.t==='g'?'#FFE08A':'#FFB347');
  if(o.t==='g'){SFX.gold();slowT=3;bn={t:1.4,s:'BITCOIN TIME'}}
  prog++;if(lvl%10!==0&&prog>=need)lvlUp();updHud()}
 function test(ax,ay,bx,by){var dx=bx-ax,dy=by-ay,l2=dx*dx+dy*dy||1,a=Math.atan2(dy,dx);
@@ -245,6 +248,7 @@ function spawnOne(){
  if(lvl>=2&&!has('g')&&pk(.035))return mk('g');
  if(w>=2&&!has('l')&&pk(.022))return mk('l');
  if(w>=6&&!has('s')&&!shield&&pk(.016))return mk('s');
+ if(w>=7&&!has('n')&&bons<=0&&pk(.014))return mk('n');
  if(lvl>=8&&pk(.15))return mk('m');
  return mk('o')}
 function lightning(o){SFX.zap();wf=.4;addFt(o.x,o.y,'LIGHTNING','#9fe8ff');
@@ -257,9 +261,9 @@ function fx(dt){var g=H*1.25;
  hv.forEach(function(h){h.vy+=g*dt;h.x+=h.vx*dt;h.y+=h.vy*dt;h.rot+=h.vr*dt;h.fp+=h.fs*dt});hv=hv.filter(function(h){return h.y<H+h.r*2});
  ft.forEach(function(f){f.y+=f.vy*dt;f.l-=dt});ft=ft.filter(function(f){return f.l>0});bolts.forEach(function(b){b.l-=dt});bolts=bolts.filter(function(b){return b.l>0});em.forEach(function(e){e.x+=e.vx*dt;e.y+=e.vy*dt;e.vy-=30*S*dt;e.l-=dt});em=em.filter(function(e){return e.l>0})}
 function upd(dt){var g=H*1.25;
- for(var i=objs.length-1;i>=0&&st==='play';i--){var o=objs[i];o.vy+=g*o.gm*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;o.spin+=o.sv*dt;o.rot+=o.rv*dt;if(o.fl>0)o.fl-=dt;if(o.cd>0)o.cd-=dt;
+ for(var i=objs.length-1;i>=0&&st==='play';i--){var o=objs[i];o.vy+=g*o.gm*(bons>0?.45:1)*dt;o.x+=o.vx*dt;o.y+=o.vy*dt;o.spin+=o.sv*dt;o.rot+=o.rv*dt;if(o.fl>0)o.fl-=dt;if(o.cd>0)o.cd-=dt;
   if(o.y>H+o.r*1.5&&o.vy>0){objs.splice(i,1);if(o.t==='o'||o.t==='m'||o.t==='x'){if(o.t==='x'){var b=mk('x');b.hp=o.hp;b.mx=o.mx}loseLife('MISS',o.x)}}}
- var boss=lvl%10===0;if(fren>0){fren-=dt;if(fren<=0)updHud()}spT-=dt;
+ var boss=lvl%10===0;if(bons>0){bons-=dt;if(bons<=0)updHud()}if(fren>0){fren-=dt;if(fren<=0)updHud()}spT-=dt;
  if(spT<=0&&st==='play'){spT=(fren>0?.24:boss?1.6:Math.max(.42,1.3-lvl*.011))*(.8+.4*R())*(halv&&fren<=0?1.9:1);
   var n=1+(R()<Math.min(.55,lvl*.012)?1:0)+(lvl>30&&R()<.3?1:0),bp=lvl<3?0:Math.min(.26,.05+lvl*.002);if(boss)bp*=.5;
   for(var k=0;k<n;k++){var q=R();
@@ -276,7 +280,7 @@ function drawO(o){var x=o.x,y=o.y,r=o.r,k=o.t;cx.save();
   cx.fillStyle='#3fae2a';cx.beginPath();cx.ellipse(r*.12,-r*.97,r*.2,r*.09,-.5,0,7);cx.fill();cx.restore()}
  cx.textAlign='center';cx.textBaseline='middle';
  if(k==='g'){cx.save();cx.translate(x,y);cx.scale(Math.cos(o.spin),1);cx.fillStyle='#5a2d00';cx.font='800 '+r*1.25+'px Montserrat,sans-serif';cx.fillText('₿',0,r*.05);cx.restore()}
- var TX={f:['FEAR','#cdbfff'],p:['FIAT','#d6ffe0'],l:['⚡','#fff'],s:['🔒','#fff']};
+ var TX={f:['FEAR','#cdbfff'],n:['BONS','#F7931A'],p:['FIAT','#d6ffe0'],l:['⚡','#fff'],s:['🔒','#fff']};
  if(TX[k]){cx.fillStyle=TX[k][1];cx.font='900 '+r*(k==='l'||k==='s'?.95:.5)+'px Montserrat,sans-serif';cx.fillText(TX[k][0],x,y+r*.04)}
  if(k==='r'){cx.save();cx.translate(x,y);cx.scale(Math.cos(o.spin),1);cx.fillStyle='#4a4400';cx.font='800 '+r*1.25+'px Montserrat,sans-serif';cx.fillText('$',0,r*.05);cx.restore()}
  if(k==='b'){cx.fillStyle='#ff4d3a';cx.font='900 '+r*.52+'px Montserrat,sans-serif';cx.fillText('FUD',x,y);cx.fillStyle=R()<.5?'#ffd37a':'#ff6a3c';cx.beginPath();cx.arc(x+r*.55,y-r*1.02,r*.1,0,7);cx.fill()}
@@ -317,7 +321,7 @@ function strokeFlame(P,now,TL){
   cx.closePath();cx.fill()});
  cx.fillStyle='rgba('+cs[2]+',.9)';cx.beginPath();cx.arc(Hd.x,Hd.y,Math.max(1,(1.2+Hd.a*Hd.a*13)*S*.35),0,7);cx.fill()}
 var cs=['232,89,12','247,147,26','255,244,214'],cc=[232,89,12,247,147,26,255,244,214];
-function drawTrail(now,dt){var tg=fog>0?[110,70,220,160,120,255,236,226,255]:slowT>0?[255,180,40,255,214,100,255,251,228]:fren>0?[255,50,20,255,105,30,255,226,180]:[232,89,12,247,147,26,255,244,214],kk=Math.min(1,(dt||.016)*8),q=0;
+function drawTrail(now,dt){var tg=fog>0?[110,70,220,160,120,255,236,226,255]:slowT>0?[255,180,40,255,214,100,255,251,228]:bons>0?[247,147,26,255,205,130,255,255,255]:fren>0?[255,50,20,255,105,30,255,226,180]:[232,89,12,247,147,26,255,244,214],kk=Math.min(1,(dt||.016)*8),q=0;
  for(;q<9;q++)cc[q]+=(tg[q]-cc[q])*kk;
  cs=[Math.round(cc[0])+','+Math.round(cc[1])+','+Math.round(cc[2]),Math.round(cc[3])+','+Math.round(cc[4])+','+Math.round(cc[5]),Math.round(cc[6])+','+Math.round(cc[7])+','+Math.round(cc[8])];
  var n=tr.length;if(n<2&&!em.length)return;
@@ -330,6 +334,7 @@ function frame(now){var dt=Math.min(.033,(now-last)/1000);last=now;
  cx.clearRect(0,0,W,H);cx.save();if(shake>.3){cx.translate((R()-.5)*shake,(R()-.5)*shake);shake*=.9}
  if(slowT>0){cx.fillStyle='rgba(247,147,26,.08)';cx.fillRect(0,0,W,H)}
  if(fren>0){cx.fillStyle='rgba(255,120,0,'+(.05+.03*Math.sin(now/90))+')';cx.fillRect(0,0,W,H)}
+ if(bons>0){cx.fillStyle='rgba(255,235,210,'+(.04+.03*Math.sin(now/110))+')';cx.fillRect(0,0,W,H)}
  hv.forEach(drawH);objs.forEach(drawO);
  bolts.forEach(function(b){cx.globalAlpha=Math.min(1,b.l*4);cx.strokeStyle='#bff1ff';cx.lineWidth=3*S;cx.beginPath();cx.moveTo(b.a.x,b.a.y);cx.lineTo((b.a.x+b.b.x)/2+(R()-.5)*50*S,(b.a.y+b.b.y)/2+(R()-.5)*50*S);cx.lineTo(b.b.x,b.b.y);cx.stroke()});cx.globalAlpha=1;
  pt.forEach(function(p){cx.globalAlpha=Math.min(1,p.l*2);cx.fillStyle=p.c;cx.beginPath();cx.arc(p.x,p.y,p.r,0,7);cx.fill()});cx.globalAlpha=1;
@@ -352,7 +357,7 @@ cv.addEventListener('pointermove',function(e){if(!sw.on||st!=='play')return;var 
 
 function show(id,on){$(id).classList.toggle('hide',!on)}
 function labels(){var c=cp();$('mm').textContent=(best.lvl>1||best.score>0)?'RANK: '+rank(best.lvl).toUpperCase()+(best.ds>1?'  ·  🔥 '+best.ds+'-DAY STREAK':''):'';$('go').textContent=c>1?'Continue from Level '+c:'Start';$('go2').textContent=c>1?'Continue from Level '+c:'Play again';show('go1',c>1);show('go3',c>1)}
-function start(from){ac();SFX.click();daily();mult=1;str=0;bs=0;dby='';fren=0;sliceTot=0;nextMs=0;tsCur=1;sw.on=0;wf=0;fog=0;shield=false;bolts=[];em=[];halv=false;sw.lx=W/2;sw.ly=H/2;lvl=from;score=0;lives=3;objs=[];hv=[];pt=[];ft=[];tr=[];slowT=0;redF=0;shake=0;st='play';show('menu',0);show('over',0);beginLvl()}
+function start(from){ac();SFX.click();daily();mult=1;str=0;bs=0;dby='';fren=0;sliceTot=0;nextMs=0;tsCur=1;sw.on=0;wf=0;fog=0;bons=0;shield=false;bolts=[];em=[];halv=false;sw.lx=W/2;sw.ly=H/2;lvl=from;score=0;lives=5;objs=[];hv=[];pt=[];ft=[];tr=[];slowT=0;redF=0;shake=0;st='play';show('menu',0);show('over',0);beginLvl()}
 var dby='',bs=0;
 function nextRank(L){var T=[[20,'Zest Hunter'],[50,'Juice Master'],[100,'Orange Whale'],[150,"Satoshi's Chef"],[211,'Bitcoin Orange']];for(var i=0;i<T.length;i++)if(L<T[i][0])return{l:T[i][0],n:T[i][1]};return null}
 function wname(L){var w=Math.ceil(L/10);return WN[w-1]||'Hyperbitcoinization '+(w-21)}
