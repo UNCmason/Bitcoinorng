@@ -431,7 +431,15 @@ function lbLoad(){$('lm').textContent='LOADING…';
    row.className='lr';n.textContent=i+1;a.appendChild(n);a.appendChild(document.createTextNode('@'+r.h));b.textContent=fmt(r.j);row.appendChild(a);row.appendChild(b);box.appendChild(row)})
  }).catch(function(){$('lm').textContent='BOARD OFFLINE. TRY LATER.'})}
 function lbOpen(){if(st==='play')pause();show('lb',1);$('lh').value=prof.h||'';$('la').value=prof.a||'';$('lk').value=prof.p||'';$('lp').open=!prof.h||!prof.p;$('lst').textContent='';$('lb').scrollTop=0;lbLoad()}
-$('lpost').href='https://x.com/intent/tweet?text='+encodeURIComponent('I am stacking Slices in the Orange Slice game. Bitcoin is Orange, the Ticker is ORNG.\nFollow @_O_R_N_G_ and play 👇')+'&url='+encodeURIComponent('https://bitcoinorng.xyz')+'&hashtags=Bitcoin,ORNG';
+var PV=['I am stacking Slices in the Orange Slice game. Bitcoin is Orange, the Ticker is ORNG.',
+ 'Slicing oranges and stacking Slices in the Orange Slice game 🍊 Bitcoin is Orange, the Ticker is ORNG.',
+ 'Can you clear World 3 in Orange Slice? I am stacking Slices. Bitcoin is Orange, the Ticker is ORNG.',
+ 'Swipe. Slice. Stack. I am playing the Orange Slice game. Bitcoin is Orange, the Ticker is ORNG.',
+ 'Orange Slice is my new game obsession 🍊 Stacking Slices. Bitcoin is Orange, the Ticker is ORNG.',
+ 'Bitcoin is Orange, the Ticker is ORNG. Come stack Slices with me in the Orange Slice game.'],pvi=-1;
+function setPost(){var i;do{i=Math.floor(Math.random()*PV.length)}while(i===pvi&&PV.length>1);pvi=i;
+ $('lpost').href='https://x.com/intent/tweet?text='+encodeURIComponent(PV[i]+'\nFollow @_O_R_N_G_ and play 👇')+'&url='+encodeURIComponent('https://bitcoinorng.xyz')+'&hashtags=Bitcoin,ORNG'}
+setPost();$('lpost').addEventListener('click',setPost);
 $('tb').onclick=function(){SFX.click();lbOpen()};$('jb').onclick=lbOpen;$('lx').onclick=function(){show('lb',0)};
 $('lb').addEventListener('pointerdown',function(e){if(e.target===$('lb'))show('lb',0)});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')show('lb',0)});
