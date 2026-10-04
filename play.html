@@ -146,7 +146,7 @@ a:focus,button:focus{outline:none}
 <details><summary>What is the daily streak?</summary><p>The 🔥 count on the menu shows how many days in a row you have played.</p></details>
 <div class="fqc">SHARING AND $ORNG</div>
 <details><summary>How do I share my score?</summary><p>After a run, tap Share on X. It opens a ready-made post with your rank, level and Slices that you can edit before posting. The Follow button right under it takes you to @_O_R_N_G_.</p></details>
-<details><summary>Is there a leaderboard?</summary><p>Yes. Tap 🏆 for the weekly board. Slices from all your runs add up to your weekly total. It resets every Monday (UTC).</p></details>
+<details><summary>Is there a leaderboard?</summary><p>Yes. Tap 🏆 for the board. Slices from all your runs add up. To enter the ORNG pool you need to clear World 3 and reach the Slices minimum shown on the board. A countdown at the top shows when the season ends.</p></details>
 <details><summary>Can Slices be redeemed for ORNG?</summary><p>Top players on the weekly board may receive a share of an ORNG pool, based on the Slices they stacked. It is sent by hand after checks and is not guaranteed. The game never asks you to connect a wallet.</p></details>
 <details><summary>Is this financial advice?</summary><p>No. $ORNG is a meme coin with no intrinsic value or expectation of financial return. Crypto is very volatile and you can lose everything you put in. Do your own research.</p></details>
 <details><summary>Where can I get $ORNG?</summary><p>It launched on <a href="https://bonsonbtc.fun/launch?t=ORNG" target="_blank" rel="noopener">bonsonbtc.fun</a>. The contract address is on <a href="/">bitcoinorng.xyz</a>. Always check it before you buy.</p></details>
@@ -166,7 +166,7 @@ a:focus,button:focus{outline:none}
 <input id="la" placeholder="BTC address holding ORNG (optional)" autocomplete="off">
 <button class="btn p" id="ls" type="button">Save</button><div class="sm" id="lst" style="margin-top:8px"></div>
 </details>
-<p class="lnote">Weekly Slices are the total from all your runs. Your handle and address are stored to run the board. Rewards, if any, are sent by hand after checks and are not guaranteed.</p>
+<p class="lnote">Slices are the total from all your runs this season. Your handle and address are stored to run the board. Rewards, if any, are sent by hand after checks and are not guaranteed.</p>
 </div></div></div>
 <script>
 (function(){
@@ -377,7 +377,7 @@ cv.addEventListener('pointermove',function(e){if(!sw.on||st!=='play')return;var 
 
 function show(id,on){$(id).classList.toggle('hide',!on)}
 function labels(){var c=cp();$('mm').textContent=(best.lvl>1||best.score>0)?'RANK: '+rank(best.lvl).toUpperCase()+(best.ds>1?'  ·  🔥 '+best.ds+'-DAY STREAK':''):'';$('go').textContent=c>1?'Continue from Level '+c:'Start';$('go2').textContent=c>1?'Continue from Level '+c:'Play again';show('go1',c>1);show('go3',c>1)}
-function start(from){ac();SFX.click();daily();newTok();mult=1;str=0;bs=0;dby='';fren=0;sliceTot=0;nextMs=0;tsCur=1;sw.on=0;wf=0;fog=0;bons=0;shield=false;bolts=[];em=[];halv=false;sw.lx=W/2;sw.ly=H/2;lvl=from;score=0;lives=5;objs=[];hv=[];pt=[];ft=[];tr=[];slowT=0;redF=0;shake=0;st='play';show('menu',0);show('over',0);beginLvl()}
+function start(from){ac();SFX.click();daily();newTok();mult=1;str=0;bs=0;dby='';fren=0;sliceTot=0;nextMs=0;tsCur=1;sw.on=0;wf=0;fog=0;bons=0;shield=false;bolts=[];em=[];halv=false;sw.lx=W/2;sw.ly=H/2;sl0=from;lvl=from;score=0;lives=5;objs=[];hv=[];pt=[];ft=[];tr=[];slowT=0;redF=0;shake=0;st='play';show('menu',0);show('over',0);beginLvl()}
 var dby='',bs=0;
 function nextRank(L){var T=[[20,'Zest Hunter'],[50,'Juice Master'],[100,'Orange Whale'],[150,"Satoshi's Chef"],[211,'Bitcoin Orange']];for(var i=0;i<T.length;i++)if(L<T[i][0])return{l:T[i][0],n:T[i][1]};return null}
 function wname(L){var w=Math.ceil(L/10);return WN[w-1]||'Hyperbitcoinization '+(w-21)}
@@ -390,8 +390,8 @@ function shareUrl(L,nb){var w=Math.ceil(L/10),why=dby==='RUGGED'?'got rugged by 
  return 'https://x.com/intent/tweet?text='+encodeURIComponent(tx)+'&url='+encodeURIComponent('https://bitcoinorng.xyz')+(tx.length<235?'&hashtags=Bitcoin,ORNG':'')}
 function over(win){st='over';if(win)SFX.win();else SFX.over();var L=lvl;var nb=score>best.score&&score>0;if(score>best.score)best.score=score;if(L>best.lvl)best.lvl=L;save();
  $('ot').textContent=win?'BITCOIN ORANGE ACHIEVED':(nb?'NEW BEST!':'GAME OVER');$('os').textContent=score;$('ol').textContent=L;$('oc').textContent=L>210?'':'/210';$('ow').textContent='';show('jb',!prof.h&&score>0);
- if(prof.h&&tok&&score>0){var tk=tok;tok=null;api('submit',{body:{h:prof.h,addr:prof.a,score:score,level:L,bs:bs,t:tk.t,n:tk.n,sig:tk.sig}}).then(function(j){
-  if(j&&j.ok)$('ow').textContent='🏆 Weekly #'+j.rank+' · '+fmt(j.juice)+' Slices'+(j.credited<score?' (daily cap reached)':'');
+ if(prof.h&&tok&&score>0){var tk=tok;tok=null;api('submit',{body:{h:prof.h,addr:prof.a,score:score,level:L,sl:sl0,bs:bs,t:tk.t,n:tk.n,sig:tk.sig}}).then(function(j){
+  if(j&&j.ok)$('ow').textContent=j.qualified?'🏆 In the pool · #'+j.rank+' · '+fmt(j.slices)+' Slices'+(j.credited<score?' (daily cap reached)':''):fmt(j.slices)+' / '+fmt(j.minS)+' Slices · Level '+j.level+' / '+j.minL+' to enter';
   else if(j&&j.error)$('ow').textContent='Run not counted: '+j.error}).catch(function(){})}
  var nr=nextRank(L);$('ob').textContent='Rank: '+rank(L)+(nr?' · Next: '+nr.n+' at Lv '+nr.l:'');
  $('sh').href=shareUrl(L,nb);
@@ -406,20 +406,24 @@ $('hb').onclick=$('fqm').onclick=function(){SFX.click();fq(1)};$('fx').onclick=f
 $('fq').addEventListener('pointerdown',function(e){if(e.target===$('fq'))fq(0)});
 $('fs').addEventListener('input',function(){filt(this.value)});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')fq(0)});
-var prof={h:'',a:''},tok=null;
+var prof={h:'',a:''},tok=null,sl0=1;
 try{prof=JSON.parse(localStorage.getItem('orngProf'))||prof}catch(e){}
 function api(a,o){o=o||{};var init=o.body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o.body)}:o.post?{method:'POST'}:undefined;
  return fetch('/api/lb?a='+a+(o.q?'&'+o.q:''),init).then(function(r){return r.json()})}
 function newTok(){tok=null;if(!prof.h)return;api('start',{post:1}).then(function(j){if(j&&j.sig)tok=j}).catch(function(){})}
 function fmt(n){return Number(n||0).toLocaleString('en-US')}
+var lbEnd=0,lbSt='',lbPool='',lbTm=null;
+function lbTick(){var el=$('lm');if(!lbEnd)return;var ms=lbEnd-Date.now();
+ if(lbSt==='ended'||ms<=0){el.textContent='SEASON ENDED · PAYOUTS SOON';return}
+ var s=Math.floor(ms/1e3),d=Math.floor(s/86400),h=Math.floor(s%86400/3600),m=Math.floor(s%3600/60);
+ el.textContent=(lbSt==='soon'?'STARTS IN ':'ENDS IN ')+d+'D '+h+'H '+m+'M '+(s%60)+'S'+(lbPool?' · POOL '+lbPool:'')}
 function lbLoad(){$('lm').textContent='LOADING…';
  api('top',{q:'h='+encodeURIComponent(prof.h||'')}).then(function(j){
   if(!j||!j.top){$('lm').textContent='BOARD OFFLINE. TRY LATER.';return}
-  var ms=Math.max(0,new Date(j.reset)-Date.now()),d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5);
-  $('lm').textContent='RESETS IN '+d+'D '+h+'H'+(j.pool?' · POOL '+j.pool:'');
-  var me=j.me,box=$('ll');$('lme').style.display=prof.h?'block':'none';
-  if(prof.h)$('lme').textContent='@'+prof.h.toLowerCase()+(me&&me.juice?' · #'+me.rank+' · '+fmt(me.juice)+' Slices · '+me.share+'% share':' · no Slices yet this week');
-  box.textContent='';if(!j.top.length){box.textContent='No scores yet. Be the first.';return}
+  lbSt=j.status;lbPool=j.pool||'';lbEnd=j.status==='soon'?j.start:j.end;lbTick();clearInterval(lbTm);lbTm=setInterval(lbTick,1000);
+  var me=j.me,e=$('lme'),box=$('ll');e.style.display='block';
+  e.textContent=!prof.h?'To enter: reach Level '+j.minL+' and stack '+fmt(j.minS)+' Slices':me&&me.qualified?'@'+prof.h.toLowerCase()+' · #'+me.rank+' · '+fmt(me.slices)+' Slices · '+me.share+'% share':'@'+prof.h.toLowerCase()+' · '+fmt(me?me.slices:0)+' / '+fmt(j.minS)+' Slices · Level '+(me?me.level:0)+' / '+j.minL;
+  box.textContent='';if(!j.top.length){box.textContent='No one has qualified yet. Be the first.';return}
   j.top.forEach(function(r,i){var row=document.createElement('div'),a=document.createElement('span'),b=document.createElement('b'),n=document.createElement('i');
    row.className='lr';n.textContent=i+1;a.appendChild(n);a.appendChild(document.createTextNode('@'+r.h));b.textContent=fmt(r.j);row.appendChild(a);row.appendChild(b);box.appendChild(row)})
  }).catch(function(){$('lm').textContent='BOARD OFFLINE. TRY LATER.'})}
