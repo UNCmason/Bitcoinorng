@@ -146,7 +146,8 @@ a:focus,button:focus{outline:none}
 <details><summary>What is the daily streak?</summary><p>The 🔥 count on the menu shows how many days in a row you have played.</p></details>
 <div class="fqc">SHARING AND $ORNG</div>
 <details><summary>How do I share my score?</summary><p>After a run, tap Share on X. It opens a ready-made post with your rank, level and Slices that you can edit before posting. The Follow button right under it takes you to @_O_R_N_G_.</p></details>
-<details><summary>Is there a leaderboard?</summary><p>Yes. Tap 🏆 for the board. Slices from all your runs add up. To enter the ORNG pool you need to clear World 3 and reach the Slices minimum shown on the board. A countdown at the top shows when the season ends.</p></details>
+<details><summary>Is there a leaderboard?</summary><p>Yes. Tap 🏆 for the board. Slices from all your runs add up. To enter the ORNG pool you need to clear World 3 and reach the Slices minimum shown on the board, and post about the game on X. A countdown at the top shows when the season ends.</p></details>
+<details><summary>Why do I need to post on X?</summary><p>To enter the ORNG pool, post about Orange Slice on X, tag @_O_R_N_G_ and paste your post link in 🏆 My profile. It helps spread the game and shows you are a real player. The post must be from your own account and made this season.</p></details>
 <details><summary>Can Slices be redeemed for ORNG?</summary><p>Top players on the weekly board may receive a share of an ORNG pool, based on the Slices they stacked. It is sent by hand after checks and is not guaranteed. The game never asks you to connect a wallet.</p></details>
 <details><summary>Is this financial advice?</summary><p>No. $ORNG is a meme coin with no intrinsic value or expectation of financial return. Crypto is very volatile and you can lose everything you put in. Do your own research.</p></details>
 <details><summary>Where can I get $ORNG?</summary><p>It launched on <a href="https://bonsonbtc.fun/launch?t=ORNG" target="_blank" rel="noopener">bonsonbtc.fun</a>. The contract address is on <a href="/">bitcoinorng.xyz</a>. Always check it before you buy.</p></details>
@@ -163,10 +164,12 @@ a:focus,button:focus{outline:none}
 <div id="ll"></div>
 <details id="lp"><summary>My profile</summary>
 <input id="lh" placeholder="Your X handle (no @)" maxlength="15" autocomplete="off">
-<input id="la" placeholder="BTC address holding ORNG (optional)" autocomplete="off">
+<input id="la" placeholder="BTC address holding ORNG, starts with bc1… (optional)" autocomplete="off">
+<input id="lk" placeholder="Link to your X post (required to enter)" autocomplete="off">
+<a class="btn" id="lpost" target="_blank" rel="noopener">Post on X to enter</a>
 <button class="btn p" id="ls" type="button">Save</button><div class="sm" id="lst" style="margin-top:8px"></div>
 </details>
-<p class="lnote">Slices are the total from all your runs this season. Your handle and address are stored to run the board. Rewards, if any, are sent by hand after checks and are not guaranteed.</p>
+<p class="lnote">Slices are the total from all your runs this season. To enter the pool you must also post about the game on X and paste your post link above. Your handle and address are stored to run the board. Rewards, if any, are sent by hand after checks and are not guaranteed.</p>
 </div></div></div>
 <script>
 (function(){
@@ -391,7 +394,7 @@ function shareUrl(L,nb){var w=Math.ceil(L/10),why=dby==='RUGGED'?'got rugged by 
 function over(win){st='over';if(win)SFX.win();else SFX.over();var L=lvl;var nb=score>best.score&&score>0;if(score>best.score)best.score=score;if(L>best.lvl)best.lvl=L;save();
  $('ot').textContent=win?'BITCOIN ORANGE ACHIEVED':(nb?'NEW BEST!':'GAME OVER');$('os').textContent=score;$('ol').textContent=L;$('oc').textContent=L>210?'':'/210';$('ow').textContent='';show('jb',!prof.h&&score>0);
  if(prof.h&&tok&&score>0){var tk=tok;tok=null;api('submit',{body:{h:prof.h,addr:prof.a,score:score,level:L,sl:sl0,bs:bs,t:tk.t,n:tk.n,sig:tk.sig}}).then(function(j){
-  if(j&&j.ok)$('ow').textContent=j.qualified?'🏆 In the pool · #'+j.rank+' · '+fmt(j.slices)+' Slices'+(j.credited<score?' (daily cap reached)':''):fmt(j.slices)+' / '+fmt(j.minS)+' Slices · Level '+j.level+' / '+j.minL+' to enter';
+  if(j&&j.ok)$('ow').textContent=j.qualified?'🏆 In the pool · #'+j.rank+' · '+fmt(j.slices)+' Slices'+(j.credited<score?' (daily cap reached)':''):fmt(j.slices)+' / '+fmt(j.minS)+' Slices · Level '+j.level+' / '+j.minL+' to enter'+(j.post?'':' · add your X post');
   else if(j&&j.error)$('ow').textContent='Run not counted: '+j.error}).catch(function(){})}
  var nr=nextRank(L);$('ob').textContent='Rank: '+rank(L)+(nr?' · Next: '+nr.n+' at Lv '+nr.l:'');
  $('sh').href=shareUrl(L,nb);
@@ -422,20 +425,26 @@ function lbLoad(){$('lm').textContent='LOADING…';
   if(!j||!j.top){$('lm').textContent='BOARD OFFLINE. TRY LATER.';return}
   lbSt=j.status;lbPool=j.pool||'';lbEnd=j.status==='soon'?j.start:j.end;lbTick();clearInterval(lbTm);lbTm=setInterval(lbTick,1000);
   var me=j.me,e=$('lme'),box=$('ll');e.style.display='block';
-  e.textContent=!prof.h?'To enter: reach Level '+j.minL+' and stack '+fmt(j.minS)+' Slices':me&&me.qualified?'@'+prof.h.toLowerCase()+' · #'+me.rank+' · '+fmt(me.slices)+' Slices · '+me.share+'% share':'@'+prof.h.toLowerCase()+' · '+fmt(me?me.slices:0)+' / '+fmt(j.minS)+' Slices · Level '+(me?me.level:0)+' / '+j.minL;
+  e.textContent=!prof.h?'To enter: reach Level '+j.minL+', stack '+fmt(j.minS)+' Slices and post about the game on X':me&&me.qualified?'@'+prof.h.toLowerCase()+' · #'+me.rank+' · '+fmt(me.slices)+' Slices · '+me.share+'% share':'@'+prof.h.toLowerCase()+' · '+fmt(me?me.slices:0)+' / '+fmt(j.minS)+' Slices · Level '+(me?me.level:0)+' / '+j.minL+' · X post '+(me&&me.post?'✓':'needed');
   box.textContent='';if(!j.top.length){box.textContent='No one has qualified yet. Be the first.';return}
   j.top.forEach(function(r,i){var row=document.createElement('div'),a=document.createElement('span'),b=document.createElement('b'),n=document.createElement('i');
    row.className='lr';n.textContent=i+1;a.appendChild(n);a.appendChild(document.createTextNode('@'+r.h));b.textContent=fmt(r.j);row.appendChild(a);row.appendChild(b);box.appendChild(row)})
  }).catch(function(){$('lm').textContent='BOARD OFFLINE. TRY LATER.'})}
-function lbOpen(){if(st==='play')pause();show('lb',1);$('lh').value=prof.h||'';$('la').value=prof.a||'';$('lp').open=!prof.h;$('lst').textContent='';$('lb').scrollTop=0;lbLoad()}
+function lbOpen(){if(st==='play')pause();show('lb',1);$('lh').value=prof.h||'';$('la').value=prof.a||'';$('lk').value=prof.p||'';$('lp').open=!prof.h||!prof.p;$('lst').textContent='';$('lb').scrollTop=0;lbLoad()}
+$('lpost').href='https://x.com/intent/tweet?text='+encodeURIComponent('I am stacking Slices in the Orange Slice game. Bitcoin is Orange, the Ticker is ORNG.\nFollow @_O_R_N_G_ and play 👇')+'&url='+encodeURIComponent('https://bitcoinorng.xyz')+'&hashtags=Bitcoin,ORNG';
 $('tb').onclick=function(){SFX.click();lbOpen()};$('jb').onclick=lbOpen;$('lx').onclick=function(){show('lb',0)};
 $('lb').addEventListener('pointerdown',function(e){if(e.target===$('lb'))show('lb',0)});
 document.addEventListener('keydown',function(e){if(e.key==='Escape')show('lb',0)});
-$('ls').onclick=function(){var h=$('lh').value.trim().replace(/^@/,''),a=$('la').value.trim();
- if(!/^[A-Za-z0-9_]{1,15}$/.test(h)){$('lst').textContent='Enter your X handle.';return}
- if(a&&!/^(bc1[a-z0-9]{20,90}|[13][a-km-zA-HJ-NP-Z1-9]{25,39})$/.test(a)){$('lst').textContent='That address looks wrong.';return}
- prof={h:h,a:a};try{localStorage.setItem('orngProf',JSON.stringify(prof))}catch(e){}
- $('lst').textContent='Saved. Your next run counts.';newTok();lbLoad()};
+$('ls').onclick=function(){var h=$('lh').value.trim().replace(/^@/,''),a=$('la').value.trim(),k=$('lk').value.trim(),st=$('lst');
+ if(!/^[A-Za-z0-9_]{1,15}$/.test(h)){st.textContent='Enter your X handle.';return}
+ if(a&&!/^(bc1[a-z0-9]{20,90}|[13][a-km-zA-HJ-NP-Z1-9]{25,39})$/.test(a)){st.textContent='That address looks wrong. It should start with bc1.';return}
+ if(k){var m=/^https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})\/status\/\d{5,25}/i.exec(k);
+  if(!m){st.textContent='That is not an X post link.';return}if(m[1].toLowerCase()!==h.toLowerCase()){st.textContent='The post must be from @'+h+'.';return}}
+ prof={h:h,a:a,p:k};try{localStorage.setItem('orngProf',JSON.stringify(prof))}catch(e){}
+ st.textContent='Saving…';newTok();
+ (k?api('post',{body:{h:h,link:k}}):Promise.resolve({ok:true})).then(function(j){
+  st.textContent=j&&j.ok?(k?'Saved. Post accepted.':'Saved. Add your X post to enter the pool.'):'Saved, but: '+((j&&j.error)||'post not accepted');lbLoad()
+ }).catch(function(){st.textContent='Saved here. Server unreachable.';lbLoad()})};
 function pause(){if(st!=='play')return;st='pause';sw.on=0;show('pz',1)}
 $('pb').onclick=pause;$('rs').onclick=function(){show('pz',0);st='play';ac();SFX.click()};$('qt').onclick=function(){show('pz',0);over(false)};
 document.addEventListener('visibilitychange',function(){if(document.hidden)pause()});
