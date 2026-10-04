@@ -30,6 +30,23 @@ const ipOf = req => crypto.createHash('sha256').update(String((req.headers['x-fo
 async function limit(r, key, max, sec) { const n = await r.incr(key); if (n === 1) await r.expire(key, sec); return n <= max; }
 function rows(flat) { const o = []; for (let i = 0; i < flat.length; i += 2) o.push({ h: String(flat[i]), j: Number(flat[i + 1]) }); return o; }
 
+// X post link check: must be from the player's own handle and created during this season.
+// (X post IDs contain their creation time, so an old post can be spotted without the X API.)
+function postCheck(link, h, S) {
+  const m = /^https?:\/\/(?:www\.|mobile\.)?(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})\/status\/(\d{5,25})/i.exec(String(link || '').trim());
+  if (!m) return { error: 'not an X post link' };
+  if (m[1].toLowerCase() !== h) return { error: 'post must be from @' + h };
+  const ts = Number(BigInt(m[2]) >> 22n) + 1288834974657, floor = S.start || (S.end - 8 * 864e5);
+  if (ts < floor) return { error: 'post is older than this season' };
+  if (ts > Date.now() + 3e5) return { error: 'bad post link' };
+  return { link: 'https://x.com/' + m[1] + '/status/' + m[2] };
+}
+async function evalQ(r, id, h, minS, minL) { // in the pool = enough Slices + level + an X post
+  const [t, lv, pp] = await Promise.all([r.zscore('lb:' + id, h), r.hget('lv:' + id, h), r.hget('pp:' + id, h)]);
+  if (Number(t) >= minS && Number(lv) >= minL && pp) { await r.zadd('q:' + id, { score: Number(t), member: h }); await r.expire('q:' + id, 3456000); return true; }
+  return false;
+}
+
 module.exports = async (req, res) => {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {}, a = q.a, post = req.method === 'POST';
@@ -46,9 +63,9 @@ module.exports = async (req, res) => {
       const out = { id, start: S.start, end: S.end, status, pool: env('WEEKLY_POOL', ''), minS, minL, count: all.length, top: all.slice(0, 20) };
       const h = hOk(q.h);
       if (h) {
-        const [t, lv, qs] = await Promise.all([r.zscore('lb:' + id, h), r.hget('lv:' + id, h), r.zscore('q:' + id, h)]);
+        const [t, lv, qs, pp] = await Promise.all([r.zscore('lb:' + id, h), r.hget('lv:' + id, h), r.zscore('q:' + id, h), r.hget('pp:' + id, h)]);
         const qual = qs != null;
-        out.me = { slices: Number(t) || 0, level: Number(lv) || 0, qualified: qual, rank: qual ? all.findIndex(x => x.h === h) + 1 : 0, share: qual && qtot ? +(100 * Number(qs) / qtot).toFixed(2) : 0 };
+        out.me = { slices: Number(t) || 0, level: Number(lv) || 0, post: !!pp, qualified: qual, rank: qual ? all.findIndex(x => x.h === h) + 1 : 0, share: qual && qtot ? +(100 * Number(qs) / qtot).toFixed(2) : 0 };
       }
       return res.status(200).json(out);
     }
@@ -57,6 +74,17 @@ module.exports = async (req, res) => {
       if (!(await limit(r, 'rl:s:' + ipOf(req), 30, 60))) return res.status(429).json({ error: 'slow down' });
       const t = Date.now(), n = crypto.randomBytes(8).toString('hex');
       return res.status(200).json({ t, n, sig: sign(t + '.' + n) });
+    }
+
+    if (a === 'post' && post) { // save the player's X post link for this season
+      const b = req.body || {}, h = hOk(b.h);
+      if (!h) return res.status(400).json({ error: 'bad handle' });
+      if (status === 'ended') return res.status(400).json({ error: 'season ended' });
+      if (!(await limit(r, 'rl:l:' + ipOf(req), 30, 3600))) return res.status(429).json({ error: 'slow down' });
+      const pc = postCheck(b.link, h, S);
+      if (pc.error) return res.status(400).json({ error: pc.error });
+      await r.hset('pp:' + id, { [h]: pc.link }); await r.expire('pp:' + id, KEEP);
+      return res.status(200).json({ ok: true, qualified: await evalQ(r, id, h, minS, minL) });
     }
 
     if (a === 'submit' && post) {
@@ -83,8 +111,7 @@ module.exports = async (req, res) => {
       const cur = Number(await r.hget('lv:' + id, h)) || 0;
       if (L > cur) { await r.hset('lv:' + id, { [h]: L }); await r.expire('lv:' + id, KEEP); }
       const maxL = Math.max(cur, L), total = Number(await r.zscore('lb:' + id, h)) || 0;
-      let qual = false;
-      if (total >= minS && maxL >= minL) { await r.zadd('q:' + id, { score: total, member: h }); await r.expire('q:' + id, KEEP); qual = true; }
+      const qual = await evalQ(r, id, h, minS, minL), hasPost = !!(await r.hget('pp:' + id, h));
       await r.hset('p:' + h, { ts: Date.now() });
       if (b.addr) { // first address wins; a different one is kept separately for review
         const c0 = await r.hget('p:' + h, 'addr');
@@ -92,7 +119,7 @@ module.exports = async (req, res) => {
         else if (c0 !== b.addr) await r.hset('p:' + h, { addr2: String(b.addr) });
       }
       const rank = qual ? (await r.zrevrank('q:' + id, h)) + 1 : 0;
-      return res.status(200).json({ ok: true, credited: credit, slices: total, level: maxL, qualified: qual, rank, minS, minL });
+      return res.status(200).json({ ok: true, credited: credit, slices: total, level: maxL, qualified: qual, post: hasPost, rank, minS, minL });
     }
 
     if (a === 'export') { // /api/lb?a=export&key=ADMIN_KEY&format=csv  (qualified players only; &s=SEASON_ID for another season)
@@ -101,11 +128,11 @@ module.exports = async (req, res) => {
       const sid = /^[A-Za-z0-9_-]{1,20}$/.test(q.s || '') ? q.s : id;
       const list = rows(await r.zrange('q:' + sid, 0, 1999, { rev: true, withScores: true }));
       const tot = list.reduce((s, x) => s + x.j, 0);
-      const pr = await Promise.all(list.map(async x => [await r.hget('p:' + x.h, 'addr'), await r.hget('p:' + x.h, 'addr2'), await r.hget('lv:' + sid, x.h)]));
-      const data = list.map((x, i) => ({ rank: i + 1, handle: x.h, address: pr[i][0] || '', other_address: pr[i][1] || '', slices: x.j, level: Number(pr[i][2]) || 0, share_pct: tot ? +(100 * x.j / tot).toFixed(3) : 0 }));
+      const pr = await Promise.all(list.map(async x => [await r.hget('p:' + x.h, 'addr'), await r.hget('p:' + x.h, 'addr2'), await r.hget('lv:' + sid, x.h), await r.hget('pp:' + sid, x.h)]));
+      const data = list.map((x, i) => ({ rank: i + 1, handle: x.h, address: pr[i][0] || '', other_address: pr[i][1] || '', slices: x.j, level: Number(pr[i][2]) || 0, post: pr[i][3] || '', share_pct: tot ? +(100 * x.j / tot).toFixed(3) : 0 }));
       if (q.format === 'csv') {
         res.setHeader('Content-Type', 'text/csv');
-        return res.status(200).send('rank,handle,address,other_address,slices,level,share_pct\n' + data.map(d => [d.rank, d.handle, d.address, d.other_address, d.slices, d.level, d.share_pct].join(',')).join('\n'));
+        return res.status(200).send('rank,handle,address,other_address,slices,level,post,share_pct\n' + data.map(d => [d.rank, d.handle, d.address, d.other_address, d.slices, d.level, d.post, d.share_pct].join(',')).join('\n'));
       }
       return res.status(200).json({ season: sid, qualified: list.length, total_slices: tot, rows: data });
     }
