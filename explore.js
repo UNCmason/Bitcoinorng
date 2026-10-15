@@ -67,6 +67,45 @@
     return `$${n.toFixed(8).replace(/0+$/, "").replace(/\.$/, "")}`;
   }
 
+  function usdFromSats(value, rate) {
+    const sats = Number(value);
+    const px = Number(rate);
+    if (!Number.isFinite(sats) || !Number.isFinite(px) || px <= 0) return null;
+    return (sats / 1e8) * px;
+  }
+
+  function moneyText(value, rate) {
+    const btc = btcFromSats(value);
+    const dollars = usdFromSats(value, rate);
+    if (dollars == null) return btc;
+    return `${btc} (${usd(dollars)})`;
+  }
+
+  function moneyHtml(value, rate) {
+    const btc = btcFromSats(value);
+    const dollars = usdFromSats(value, rate);
+    if (dollars == null) return esc(btc);
+    return `<span class="tiny">${esc(btc)}</span> <span class="usd">${esc(usd(dollars))}</span>`;
+  }
+
+  function eachHtml(satsEach, rate) {
+    const n = Number(satsEach);
+    if (!Number.isFinite(n)) return "";
+    const label = `${num(n, 2)} sats`;
+    const dollars = usdFromSats(n, rate);
+    if (dollars == null) return esc(label);
+    return `<span class="tiny">${esc(label)}</span> <span class="usd">${esc(usd(dollars))}</span>`;
+  }
+
+  function walletHtml(portfolio, rate) {
+    const btc = btcFromSats(portfolio && portfolio.btc_sats);
+    const raw = portfolio ? portfolio.btc_usd : undefined;
+    const apiUsd = raw == null || raw === "" ? Number.NaN : Number(raw);
+    const dollars = Number.isFinite(apiUsd) ? apiUsd : usdFromSats(portfolio && portfolio.btc_sats, rate);
+    if (!Number.isFinite(dollars)) return esc(btc);
+    return `<span class="tiny">${esc(btc)}</span> <span class="usd">${esc(usd(dollars))}</span>`;
+  }
+
   function shortId(value, head, tail) {
     if (!value) return "—";
     const h = head == null ? 6 : head;
@@ -89,30 +128,48 @@
     }) + " UTC";
   }
 
-  function tradeSentence(trade) {
+  function tradeBits(trade) {
     const ticker = trade.ticker || "the coin";
     const amount = tokenAmount(trade.amount);
-    const paid = btcFromSats(trade.sats);
     const steps = trade.rungs > 0 ? trade.rungs : 0;
     const stepText = steps
-      ? ` It used ${steps} price ${steps === 1 ? "step" : "steps"} that were already waiting.`
+      ? ` It used ${steps} price ${steps === 1 ? "step that was" : "steps that were"} already waiting.`
       : " It finished in one Bitcoin transaction.";
-    if (trade.side === "buy") return `Bought ${amount} ${ticker} for ${paid}.${stepText}`;
-    if (trade.side === "sell") return `Sold ${amount} ${ticker} for ${paid}.${stepText}`;
-    return `Swapped ${amount} ${ticker} for ${paid}.${stepText}`;
+    const verb = trade.side === "buy" ? "Bought" : trade.side === "sell" ? "Sold" : "Swapped";
+    return { verb, amount, ticker, sats: trade.sats, stepText };
   }
 
-  function detailSentence(detail) {
+  function tradeSentence(trade, rate) {
+    const bit = tradeBits(trade);
+    return `${bit.verb} ${bit.amount} ${bit.ticker} for ${moneyText(bit.sats, rate)}.${bit.stepText}`;
+  }
+
+  function tradeHtml(trade, rate) {
+    const bit = tradeBits(trade);
+    return `${esc(bit.verb)} ${esc(bit.amount)} ${esc(bit.ticker)} for ${moneyHtml(bit.sats, rate)}.${esc(bit.stepText)}`;
+  }
+
+  function detailBits(detail) {
     const legs = detail.legs || [];
     const ticker = (legs[0] && legs[0].ticker) || (detail.tickers && detail.tickers[0]) || "the coin";
     const side = legs[0] && legs[0].side;
     const amount = legs.reduce((sum, leg) => sum + (Number(leg.amount) || 0), 0);
-    const paid = legs.reduce((sum, leg) => sum + (Number(leg.sats) || 0), 0);
+    const paidSats = legs.reduce((sum, leg) => sum + (Number(leg.sats) || 0), 0);
     const verb = side === "sell" ? "Sold" : side === "buy" ? "Bought" : "Swapped";
     const stepText = legs.length
       ? ` The swap used ${legs.length} price ${legs.length === 1 ? "step" : "steps"} already waiting on Bitcoin.`
       : "";
-    return `${verb} ${tokenAmount(amount)} ${ticker} for ${btcFromSats(paid)}.${stepText}`;
+    return { verb, amount: tokenAmount(amount), ticker, paidSats, stepText };
+  }
+
+  function detailSentence(detail, rate) {
+    const bit = detailBits(detail);
+    return `${bit.verb} ${bit.amount} ${bit.ticker} for ${moneyText(bit.paidSats, rate)}.${bit.stepText}`;
+  }
+
+  function detailHtml(detail, rate) {
+    const bit = detailBits(detail);
+    return `${esc(bit.verb)} ${esc(bit.amount)} ${esc(bit.ticker)} for ${moneyHtml(bit.paidSats, rate)}.${esc(bit.stepText)}`;
   }
 
   function coinLine(token) {
@@ -138,11 +195,14 @@
     return `${tick} is a CRC-20 coin on Bitcoin.`;
   }
 
-  function swapStory(pool) {
+  function swapStory(pool, rate) {
     if (!pool || (pool.bids == null && pool.asks == null && pool.mid == null)) return "The swap book did not load.";
     const waiting = (Number(pool.bids) || 0) + (Number(pool.asks) || 0);
     if (!waiting) return "No one has posted a bitcoin price for this coin yet. A swap can happen after someone does.";
-    const mid = pool.mid ? ` The closest prices meet near ${num(pool.mid, 2)} sats per coin.` : "";
+    const midUsd = usdFromSats(pool.mid, rate);
+    const mid = pool.mid
+      ? ` The closest prices meet near ${num(pool.mid, 2)} sats${midUsd != null ? ` (${usd(midUsd)})` : ""} per coin.`
+      : "";
     return `People have posted ${num(pool.bids, 0)} buy prices and ${num(pool.asks, 0)} sell prices. A swap fills those prices and pays bitcoin in the same Bitcoin transaction.${mid}`;
   }
 
@@ -271,7 +331,7 @@
   }
 
   const Look = {
-    esc, tokenAmount, num, btcFromSats, sats, usd, shortId, when,
+    esc, tokenAmount, num, btcFromSats, sats, usd, usdFromSats, moneyText, shortId, when,
     tradeSentence, detailSentence, coinLine, coinStory, swapStory, feeSentence,
     readOpReturn, markerSentence, pickColor, decide, routeHash, BONS_ORANGE,
   };
@@ -284,6 +344,12 @@
   const input = document.getElementById("q");
   const colors = { BONS: BONS_ORANGE };
   let coinCache = null;
+  let rateNow = null;
+
+  function rememberRate(stats) {
+    const n = Number(stats && stats.btc_usd);
+    if (Number.isFinite(n) && n > 0) rateNow = n;
+  }
 
   function unwrap(json) {
     if (json && typeof json === "object" && json.ok === true && "data" in json) return json.data;
@@ -318,16 +384,16 @@
     return `<span class="mark" aria-hidden="true">${esc(tick.slice(0, 1))}</span>`;
   }
 
-  function swapRow(trade) {
+  function swapRow(trade, rate) {
     const pill = trade.side === "sell" ? "sell" : "buy";
     const label = trade.side === "sell" ? "Sell" : trade.side === "buy" ? "Buy" : "Swap";
     return `<a class="swap" data-tickrow="${esc(trade.ticker || "BONS")}" style="--coin:${esc(colorOf(trade.ticker || "BONS"))}" href="#/tx/${esc(trade.txid)}">
-      <b>${esc(tradeSentence(trade))}</b>
+      <b>${tradeHtml(trade, rate)}</b>
       <div class="meta">
         <span class="pill ${pill}">${label}</span>
         <span>${esc(trade.ticker || "")}</span>
         <span>${esc(when(trade.at))}</span>
-        ${trade.sats_per_token ? `<span>${esc(num(trade.sats_per_token, 2))} sats each</span>` : ""}
+        ${trade.sats_per_token ? `<span>${eachHtml(trade.sats_per_token, rate)} each</span>` : ""}
         <span class="mono">${esc(shortId(trade.txid, 8, 6))}</span>
       </div>
     </a>`;
@@ -343,7 +409,7 @@
     </a>`;
   }
 
-  function homeHtml(state, filter) {
+  function homeHtml(state, filter, rate) {
     const stats = state.stats || {};
     const pool = state.pool || {};
     const tokens = state.tokens || [];
@@ -372,9 +438,9 @@
         <div class="stat"><span class="k">Coins launched</span><span class="v">${esc(String(tokens.length || "—"))}</span></div>
         <div class="stat"><span class="k">BONS swaps, 24h</span><span class="v">${esc(num(pool.fills_24h, 0))}</span></div>
       </div>
-      <p class="note">${esc(swapStory(pool))}${fee ? " " + esc(fee) : ""}${pool.fees_24h_sats ? " Fees recorded in the last day: " + esc(sats(pool.fees_24h_sats)) + "." : ""}</p>
+      <p class="note">${esc(swapStory(pool, rate))}${fee ? " " + esc(fee) : ""}${pool.fees_24h_sats ? " Fees recorded in the last day: " + esc(moneyText(pool.fees_24h_sats, rate)) + "." : ""}</p>
       <h2>Latest swaps</h2>
-      <div class="list">${trades.length ? trades.slice(0, 12).map(swapRow).join("") : `<p class="note">No swaps came back.</p>`}</div>
+      <div class="list">${trades.length ? trades.slice(0, 12).map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swaps came back.</p>`}</div>
       <h2>Coins</h2>
       <div class="list">
         ${showBons ? `<a class="row" data-tickrow="BONS" style="--coin:${BONS_ORANGE}" href="#/token/BONS">${mark("BONS")}<div><span class="tick" style="color:${BONS_ORANGE}">BONS</span><p>The bitcoin swap. A trade fills prices that are already posted.</p></div><div class="side">${esc(usd(bons.market_price_usd))}<small>${stats.market_cap_usd ? esc(usd(stats.market_cap_usd)) + " market" : ""}</small></div></a>` : ""}
@@ -383,10 +449,11 @@
       </div>`;
   }
 
-  function tokenHtml(tick, token, pool, trades, stats) {
+  function tokenHtml(tick, token, pool, trades, stats, rate) {
     const recent = (trades && trades.trades) || [];
-    const price = usd((stats && stats.price_per_token_usd) || (token && (token.market_price_usd || token.price_usd)));
-    const cap = usd((stats && stats.market_cap_usd) || (token && token.market_cap_usd));
+    const own = tick === "BONS" ? stats : null;
+    const price = usd((own && own.price_per_token_usd) || (token && (token.market_price_usd || token.price_usd)));
+    const cap = usd((own && own.market_cap_usd) || (token && token.market_cap_usd));
     const story = tick === "BONS"
       ? "BONS swaps directly for bitcoin. People post a price first. A trade fills those prices in one Bitcoin transaction."
       : token
@@ -401,22 +468,22 @@
         </div>
         <p>${esc(story)}</p>
       </div>
-      <p class="note">${esc(swapStory(pool))}</p>
+      <p class="note">${esc(swapStory(pool, rate))}</p>
       <div class="stats">
         <div class="stat"><span class="k">Price</span><span class="v">${esc(price)}</span></div>
         <div class="stat"><span class="k">Market cap</span><span class="v">${esc(cap)}</span></div>
         <div class="stat"><span class="k">Holders</span><span class="v">${token && token.holders_count != null ? esc(num(token.holders_count, 0)) : "—"}</span></div>
-        <div class="stat"><span class="k">Bitcoin posted</span><span class="v">${esc(btcFromSats(pool && pool.quote_in_pool_sats))}</span></div>
+        <div class="stat"><span class="k">Bitcoin posted</span><span class="v">${moneyHtml(pool && pool.quote_in_pool_sats, rate)}</span></div>
       </div>
       <h2>Recent swaps</h2>
-      <div class="list">${recent.length ? recent.map(swapRow).join("") : `<p class="note">No swap has filled for ${esc(tick)} yet.</p>`}</div>
+      <div class="list">${recent.length ? recent.map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swap has filled for ${esc(tick)} yet.</p>`}</div>
       <a class="btn" href="${esc(bonsLink)}">See ${esc(tick)} on BONS</a>`;
   }
 
-  function txHtml(txid, detail, raw, listed) {
+  function txHtml(txid, detail, raw, listed, rate) {
     const script = raw && raw.vout && (raw.vout.find((out) => out.scriptpubkey_type === "op_return") || {}).scriptpubkey;
     const marker = script ? readOpReturn(script) : null;
-    const sentence = detail ? detailSentence(detail) : listed ? tradeSentence(listed) : "";
+    const sentence = detail ? detailHtml(detail, rate) : listed ? tradeHtml(listed, rate) : "";
     const confirmed = detail && detail.chain ? detail.chain.confirmed : raw && raw.status && raw.status.confirmed;
     const height = (detail && detail.chain && detail.chain.height) || (raw && raw.status && raw.status.block_height);
     const fee = (detail && detail.chain && detail.chain.fee_sats) || (raw && raw.fee);
@@ -427,7 +494,7 @@
     return `
       <p class="note">Bitcoin transaction</p>
       <h1 class="mono">${esc(shortId(txid, 10, 8))}</h1>
-      ${sentence ? `<div class="hero" data-tickrow="${esc(tick)}" style="--coin:${esc(colorOf(tick))}"><p>${esc(sentence)}</p></div>` : ""}
+      ${sentence ? `<div class="hero" data-tickrow="${esc(tick)}" style="--coin:${esc(colorOf(tick))}"><p>${sentence}</p></div>` : ""}
       ${!detail && !raw ? `<p class="warn">This transaction did not load.</p>` : ""}
       ${!detail && raw ? `<p class="warn">Bitcoin has this transaction. The swap list has no fill for it, so the reading below is only the note stored in the transaction.</p>` : ""}
       <div class="meta">
@@ -435,18 +502,18 @@
         ${confirmed === true ? `<span class="pill buy">Confirmed</span>` : ""}
         ${confirmed === false ? `<span class="pill sell">Waiting</span>` : ""}
         ${height ? `<span>Block ${esc(Number(height).toLocaleString("en-US"))}</span>` : ""}
-        ${fee != null ? `<span>Miner fee ${esc(sats(fee))}</span>` : ""}
+        ${fee != null ? `<span>Miner fee ${moneyHtml(fee, rate)}</span>` : ""}
         ${detail && detail.at ? `<span>${esc(when(detail.at))}</span>` : listed && listed.at ? `<span>${esc(when(listed.at))}</span>` : ""}
       </div>
       ${detail && detail.taker ? `<p>The wallet that made the swap is <a href="#/address/${esc(detail.taker)}">${esc(shortId(detail.taker, 10, 6))}</a>.</p>` : ""}
       ${marker ? `<p>${esc(markerSentence(marker))}</p>` : ""}
       ${detail ? `<p class="note">The note records how many coins moved. The swap record is what says this was paid in bitcoin.</p>` : ""}
-      ${protocol + lp > 0 ? `<p>Recorded fees on this fill: ${esc(sats(lp))} to the price poster and ${esc(sats(protocol))} to the protocol.</p>` : ""}
-      ${legs.length ? `<h2>Price steps filled</h2><table><thead><tr><th>Who posted it</th><th>Coin</th><th>Bitcoin</th><th>Price</th></tr></thead><tbody>${legs.map((leg) => `<tr>
+      ${protocol + lp > 0 ? `<p>Recorded fees on this fill: ${moneyHtml(lp, rate)} to the price poster and ${moneyHtml(protocol, rate)} to the protocol.</p>` : ""}
+      ${legs.length ? `<h2>Price steps filled</h2><table><thead><tr><th>Who posted it</th><th>Coin</th><th>Paid</th><th>Price</th></tr></thead><tbody>${legs.map((leg) => `<tr>
         <td>${leg.maker ? `<a href="#/address/${esc(leg.maker)}">${esc(shortId(leg.maker, 8, 4))}</a>` : "—"}</td>
         <td>${esc(tokenAmount(leg.amount))} ${esc(leg.ticker || "")}</td>
-        <td>${esc(btcFromSats(leg.sats))}</td>
-        <td>${leg.sats_per_token ? esc(num(leg.sats_per_token, 2)) + " sats" : "—"}</td>
+        <td>${moneyHtml(leg.sats, rate)}</td>
+        <td>${leg.sats_per_token ? eachHtml(leg.sats_per_token, rate) : "—"}</td>
       </tr>`).join("")}</tbody></table>` : ""}
       <a class="btn" href="https://mempool.space/tx/${esc(txid)}">Open on mempool.space</a>
       <p class="note mono">${esc(txid)}</p>`;
@@ -458,7 +525,7 @@
     return "Free to send";
   }
 
-  function addressHtml(address, portfolio, trades) {
+  function addressHtml(address, portfolio, trades, rate) {
     const tokens = ((portfolio && portfolio.tokens) || []).filter((token) => Number(token.balance || 0) > 0);
     const seals = (portfolio && portfolio.seals) || [];
     const mine = ((trades && trades.trades) || []).filter((trade) => trade.taker && trade.taker.toLowerCase() === address.toLowerCase());
@@ -468,8 +535,7 @@
       <p class="mono">${esc(address)}</p>
       ${!portfolio ? `<p class="warn">No balance came back for this address.</p>` : `
         <div class="stats">
-          <div class="stat"><span class="k">Bitcoin</span><span class="v">${esc(btcFromSats(portfolio.btc_sats))}</span></div>
-          <div class="stat"><span class="k">In dollars</span><span class="v">${esc(usd(portfolio.btc_usd))}</span></div>
+          <div class="stat"><span class="k">Bitcoin</span><span class="v">${walletHtml(portfolio, rate)}</span></div>
           <div class="stat"><span class="k">Coins held</span><span class="v">${tokens.length}</span></div>
           <div class="stat"><span class="k">Pieces</span><span class="v">${seals.length}</span></div>
         </div>
@@ -484,7 +550,7 @@
       ${seals.length ? `<h2>Pieces of each coin</h2><p class="note">Each receive is its own small piece. A send spends those pieces.</p><table><thead><tr><th>Coin</th><th>Amount</th><th>Where it sits</th></tr></thead><tbody>${seals.map((seal) => `<tr><td>${esc(seal.tick)}</td><td>${esc(tokenAmount(seal.amount))}</td><td>${esc(whereCoin(seal))}</td></tr>`).join("")}</tbody></table>` : ""}
       <h2>Swaps this wallet made</h2>
       <p class="note">These are swaps this wallet started, among the latest 100. A price this wallet only posted shows up on the other side of someone else's swap.</p>
-      <div class="list">${mine.length ? mine.map(swapRow).join("") : `<p class="note">None of the latest 100 swaps were started here.</p>`}</div>
+      <div class="list">${mine.length ? mine.map((trade) => swapRow(trade, rate)).join("") : `<p class="note">None of the latest 100 swaps were started here.</p>`}</div>
       <a class="btn" href="https://mempool.space/address/${esc(address)}">Open on mempool.space</a>`;
   }
 
@@ -531,25 +597,30 @@
           coins().catch(() => []),
           api({ p: "pool", tick }).catch(() => null),
           api({ p: "trades", tick, limit: "20" }).catch(() => ({ trades: [] })),
-          tick === "BONS" ? api({ p: "stats" }).catch(() => null) : Promise.resolve(null),
+          api({ p: "stats" }).catch(() => null),
         ]);
+        rememberRate(stats);
         const token = (list || []).find((item) => item.tick === tick) || null;
-        app.innerHTML = tokenHtml(tick, token, pool, trades, stats);
+        app.innerHTML = tokenHtml(tick, token, pool, trades, stats, rateNow);
       } else if (route.page === "tx") {
         const txid = route.txid;
-        const [detail, raw, list] = await Promise.all([
+        const [detail, raw, list, stats] = await Promise.all([
           api({ p: "trade", txid }).catch(() => null),
           api({ p: "tx", txid }).catch(() => null),
           api({ p: "trades", limit: "80" }).catch(() => ({ trades: [] })),
+          api({ p: "stats" }).catch(() => null),
         ]);
+        rememberRate(stats);
         const listed = ((list && list.trades) || []).find((trade) => trade.txid === txid) || null;
-        app.innerHTML = txHtml(txid, detail, raw, listed);
+        app.innerHTML = txHtml(txid, detail, raw, listed, rateNow);
       } else if (route.page === "address") {
-        const [portfolio, feed] = await Promise.all([
+        const [portfolio, feed, stats] = await Promise.all([
           api({ p: "wallet", address: route.address }).catch(() => null),
           api({ p: "trades", limit: "100" }).catch(() => ({ trades: [] })),
+          api({ p: "stats" }).catch(() => null),
         ]);
-        app.innerHTML = addressHtml(route.address, portfolio, feed);
+        rememberRate(stats);
+        app.innerHTML = addressHtml(route.address, portfolio, feed, rateNow);
       } else {
         const [stats, pool, feed, fees, tokens] = await Promise.all([
           api({ p: "stats" }).catch(() => null),
@@ -558,8 +629,9 @@
           api({ p: "fees" }).catch(() => null),
           coins().catch(() => []),
         ]);
+        rememberRate(stats);
         const failed = !stats && !tokens.length;
-        app.innerHTML = homeHtml({ stats, pool, trades: feed, fees, tokens, error: failed }, route.page === "find" ? route.q : "");
+        app.innerHTML = homeHtml({ stats, pool, trades: feed, fees, tokens, error: failed }, route.page === "find" ? route.q : "", rateNow);
       }
     } catch {
       app.innerHTML = `<p class="warn">The BONS service did not answer. Reload in a moment.</p>`;

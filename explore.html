@@ -33,7 +33,11 @@ h1{font-size:28px;line-height:1.15;margin:0 0 8px}
 .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 18px}
 .stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
 .stat .k{display:block;color:var(--mute);font-size:12px;font-weight:700}
-.stat .v{display:block;margin-top:4px;font-weight:800;font-size:18px}
+.stat .v{display:block;margin-top:2px;font-weight:800;font-size:18px}
+.tiny{color:var(--mute);font-weight:600;font-size:.82em}
+.usd{font-weight:800;color:var(--ink)}
+.stat .tiny,td .tiny{display:block;font-size:12px}
+.stat .tiny{margin-top:6px}
 h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:22px 0 8px}
 .list{display:flex;flex-direction:column;gap:8px}
 .row{display:grid;grid-template-columns:52px 1fr auto;gap:12px;align-items:center;background:var(--card);border:1px solid var(--line);border-left:5px solid var(--coin,#F7931A);border-radius:12px;padding:10px 12px;text-decoration:none}
@@ -86,7 +90,7 @@ footer{width:min(980px,100%);margin:0 auto;padding:0 16px 28px;color:var(--mute)
   </form>
 </header>
 <main id="app"><p class="note">Loading the coins…</p></main>
-<footer>Figures come from the public BONS API, live. A coin’s color is taken from the picture on that launch. This page does not hold keys and does not send transactions. CRC-20 on Bitcoin is experimental.</footer>
+<footer>Figures come from the public BONS API, live. A dollar amount is what that bitcoin is worth at today’s bitcoin price from BONS. A coin’s color is taken from the picture on that launch. This page does not hold keys and does not send transactions. CRC-20 on Bitcoin is experimental.</footer>
 <script src="/explore.js"></script>
 </body>
 </html>
