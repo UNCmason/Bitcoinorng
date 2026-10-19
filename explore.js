@@ -413,16 +413,13 @@
   }
 
   function swapRow(trade, rate) {
-    const pill = trade.side === "sell" ? "sell" : "buy";
-    const label = trade.side === "sell" ? "Sell" : trade.side === "buy" ? "Buy" : "Swap";
+    const bit = tradeBits(trade);
     return `<a class="swap" data-tickrow="${esc(trade.ticker || "BONS")}" style="--coin:${esc(colorOf(trade.ticker || "BONS"))}" href="#/tx/${esc(trade.txid)}">
-      <b>${tradeHtml(trade, rate)}</b>
+      <b>${esc(bit.verb)} ${esc(bit.amount)} ${esc(bit.ticker)}</b>
       <div class="meta">
-        <span class="pill ${pill}">${label}</span>
-        <span>${esc(trade.ticker || "")}</span>
+        <span>${moneyHtml(bit.sats, rate)}</span>
         <span>${esc(when(trade.at))}</span>
-        ${trade.sats_per_token ? `<span>${eachHtml(trade.sats_per_token, rate)} each</span>` : ""}
-        <span class="mono">${esc(shortId(trade.txid, 8, 6))}</span>
+        <span class="open">Open</span>
       </div>
     </a>`;
   }
@@ -442,10 +439,13 @@
     const stats = state.stats || {};
     const pool = state.pool || {};
     const trades = (state.trades && state.trades.trades) || [];
+    const tokens = (state.tokens || [])
+      .filter((token) => token.tick !== "BONS")
+      .sort((a, b) => (Number(b.market_cap_usd) || 0) - (Number(a.market_cap_usd) || 0));
     const height = stats.indexer && stats.indexer.height;
     return `
       <h1>BONS</h1>
-      <p class="lede">Swap BONS for bitcoin. The price is already there, and the bitcoin moves in the same transaction.</p>
+      <p class="lede">Swap BONS for bitcoin.</p>
       ${state.error ? `<p class="warn">BONS did not answer. Try again in a moment.</p>` : ""}
       <div class="stats">
         <div class="stat"><span class="k">Price</span><span class="v">${esc(usd(stats.price_per_token_usd))}</span></div>
@@ -453,9 +453,10 @@
         <div class="stat"><span class="k">Swaps, 24h</span><span class="v">${esc(num(pool.fills_24h, 0))}</span></div>
         <div class="stat"><span class="k">Fees, 24h</span><span class="v">${pool.fees_24h_sats ? moneyHtml(pool.fees_24h_sats, rate) : "—"}</span></div>
       </div>
-      <p class="note">${esc(swapStory(pool, rate))}</p>
       <h2>Latest swaps</h2>
-      <div class="list">${trades.length ? trades.slice(0, 12).map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swaps came back.</p>`}</div>`;
+      <div class="list">${trades.length ? trades.slice(0, 6).map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swaps came back.</p>`}</div>
+      <h2>Launched on BONS</h2>
+      <div class="list">${tokens.length ? tokens.map(coinRow).join("") : `<p class="note">No launches came back.</p>`}</div>`;
   }
 
   function gardenColor(tick) {
@@ -494,7 +495,7 @@
     const tick = item.tick || "";
     return `<a class="swap" data-tickrow="${esc(tick)}" style="--coin:${esc(gardenColor(tick))}" href="#/tx/${esc(item.txid)}">
       <b>${esc(line)}</b>
-      <div class="meta"><span>${esc(tick)}</span><span>${esc(when(item.block_time))}</span><span class="mono">${esc(shortId(item.txid, 8, 6))}</span></div>
+      <div class="meta"><span>${esc(when(item.block_time))}</span><span class="open">Open</span></div>
     </a>`;
   }
 
@@ -502,7 +503,7 @@
     const color = gardenColor(tick);
     return `<a class="row" data-tickrow="${esc(tick)}" style="--coin:${color}" href="${href}">
       ${mark(tick)}
-      <div><span class="tick" style="color:${color}">${esc(tick)}</span><p>${esc(blurb)}</p></div>
+      <div><span class="tick" style="color:${color}">${esc(tick)}</span>${blurb ? `<p>${esc(blurb)}</p>` : ""}</div>
       <div class="side">${esc(price)}<small>${esc(sub)}</small></div>
     </a>`;
   }
@@ -522,42 +523,35 @@
     const leafHolders = leaf.token && leaf.token.holders != null ? `${num(leaf.token.holders, 0)} holders` : "";
     const axbtHolders = axbt.token && axbt.token.holders != null ? `${num(axbt.token.holders, 0)} holders` : "";
     const mains = [
-      ["LEAF", "The original coin.", leafPrice, leafHolders],
-      ["AXBT", "Trades with LEAF.", "—", axbtHolders],
-      ["BONS", "Swap it for bitcoin.", usd(stats.price_per_token_usd), ""],
+      ["LEAF", "", leafPrice, leafHolders],
+      ["AXBT", "", "—", axbtHolders],
+      ["BONS", "Swap for bitcoin.", usd(stats.price_per_token_usd), ""],
     ].filter((row) => !q || row[0].includes(q));
-    const moves = ((state.history && state.history.items) || []).map(moveRow).filter(Boolean).slice(0, 8);
+    const moves = q ? [] : ((state.history && state.history.items) || []).map(moveRow).filter(Boolean).slice(0, 5);
+    const launches = q ? shown : [];
     return `
       <h1>${q ? "Matching " + esc(q) : "CRC-20"}</h1>
-      <p class="lede">LEAF and AXBT came first. BONS is another CRC-20. Coins launched on BONS are listed below.</p>
       ${state.error ? `<p class="warn">Some of this list did not load. Try again in a moment.</p>` : ""}
       <div class="list">
         ${mains.map((row) => mainCoin(row[0], row[1], row[2], row[3], row[0] === "BONS" ? "#/bons" : `#/coin/${row[0]}`)).join("")}
       </div>
       ${moves.length ? `<h2>Latest</h2><div class="list">${moves.join("")}</div>` : ""}
-      <h2>Launched on BONS</h2>
-      <div class="list">
-        ${shown.map(coinRow).join("")}
-        ${q && !mains.length && !shown.length ? `<p class="note">Nothing matches ${esc(q)}.</p>` : ""}
-      </div>`;
+      ${launches.length ? `<h2>Launched on BONS</h2><div class="list">${launches.map(coinRow).join("")}</div>` : ""}
+      ${q && !mains.length && !launches.length ? `<p class="note">Nothing matches ${esc(q)}.</p>` : ""}`;
   }
 
   function coinHtml(tick, info, items, rate) {
     if (tick !== "LEAF" && tick !== "AXBT") {
-      return `<h1>${esc(tick)}</h1><p class="note">Open it from the list. LEAF and AXBT are the original coins. The rest launched on BONS.</p>`;
+      return `<h1>${esc(tick)}</h1><p class="note">That coin is on the BONS tab.</p>`;
     }
     const token = (info && info.token) || {};
     const price = tick === "LEAF" ? satPrice(info && info.market && info.market.last_unit_price_sat, rate) : "—";
     const supply = token.supply ? fromAtoms(token.supply) : "—";
     const holders = token.holders != null ? num(token.holders, 0) : "—";
-    const blurb = tick === "LEAF"
-      ? "The original CRC-20 on Bitcoin."
-      : "Trades with LEAF.";
-    const rows = (items || []).map(moveRow).filter(Boolean);
+    const rows = (items || []).map(moveRow).filter(Boolean).slice(0, 5);
     return `
       <div class="hero" data-tickrow="${esc(tick)}" style="--coin:${gardenColor(tick)}">
         <div class="head">${mark(tick)}<div><h1 style="color:${gardenColor(tick)}">${esc(tick)}</h1><p class="note">CRC-20</p></div></div>
-        <p>${blurb}</p>
       </div>
       <div class="stats">
         <div class="stat"><span class="k">Price</span><span class="v">${esc(price)}</span></div>
@@ -576,7 +570,7 @@
     const story = tick === "BONS"
       ? "Swap it for bitcoin. Prices are posted first, then a trade fills them."
       : tick === "LEAF"
-        ? "This one was launched on BONS. The original LEAF is on the CRC-20 tab."
+        ? "Launched on BONS. The LEAF on the CRC-20 tab is a different coin."
         : token
           ? coinStory(token)
           : `${tick} is not in the launch list.`;
@@ -775,13 +769,14 @@
         rememberRate(stats);
         app.innerHTML = addressHtml(route.address, portfolio, feed, rateNow, garden);
       } else if (route.page === "bons") {
-        const [stats, pool, feed] = await Promise.all([
+        const [stats, pool, feed, tokens] = await Promise.all([
           api({ p: "stats" }).catch(() => null),
           api({ p: "pool", tick: "BONS" }).catch(() => null),
           api({ p: "trades", limit: "12" }).catch(() => ({ trades: [] })),
+          coins().catch(() => []),
         ]);
         rememberRate(stats);
-        app.innerHTML = homeHtml({ stats, pool, trades: feed, error: !stats && !pool }, rateNow);
+        app.innerHTML = homeHtml({ stats, pool, trades: feed, tokens, error: !stats && !pool }, rateNow);
       } else {
         const [stats, tokens, leaf, axbt, history] = await Promise.all([
           api({ p: "stats" }).catch(() => null),
