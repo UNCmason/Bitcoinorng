@@ -12,7 +12,7 @@
 <style>
 :root{--bg:#f3efe8;--ink:#1c1915;--mute:#6d645b;--line:#e4dcd0;--card:#fffdf9;--bar:#171310;--btc:#F7931A;--green:#1f6b45;--red:#8d2f2f}
 *{box-sizing:border-box}
-html,body{margin:0;padding:0;overflow-x:clip;max-width:100%;overscroll-behavior-x:none}
+html,body{margin:0;padding:0;overflow-x:hidden;overflow-y:auto;max-width:100%}
 body{background:var(--bg);color:var(--ink);font-family:Montserrat,system-ui,sans-serif;font-size:16px;line-height:1.45}
 a{color:inherit}
 button,input{font:inherit}
@@ -107,7 +107,7 @@ footer{width:min(980px,100%);margin:0 auto;padding:0 16px 28px;color:var(--mute)
   </nav>
 </header>
 <main id="app"><p class="note">Loading the coins…</p></main>
-<footer>CRC-20 coins here come from the public BONS launch list, live. A dollar amount is what that bitcoin is worth at today’s bitcoin price from BONS. A coin’s color is taken from its picture. ORNG stays orange. This page does not hold keys and does not send transactions. CRC-20 on Bitcoin is experimental.</footer>
+<footer>Dollar amounts use today’s bitcoin price. This page only reads.</footer>
 <script src="/explore.js"></script>
 </body>
 </html>
