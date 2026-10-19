@@ -86,7 +86,7 @@ async function handle(q) {
       return garden(`/stats/${tick}`);
     }
     if (what === "history") {
-      const limit = Math.min(20, Math.max(1, Number(q.get("limit")) || 12));
+      const limit = Math.min(48, Math.max(1, Number(q.get("limit")) || 12));
       return garden(`/history?tick=all&limit=${limit}`);
     }
     if (what === "tx") {

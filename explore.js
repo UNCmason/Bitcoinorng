@@ -354,8 +354,16 @@
     if (parts[0] === "tx" && parts[1]) return { page: "tx", txid: decodeURIComponent(parts[1]).toLowerCase() };
     if (parts[0] === "address" && parts[1]) return { page: "address", address: decodeURIComponent(parts[1]) };
     if (parts[0] === "find") return { page: "find", q: decodeURIComponent(parts.slice(1).join("/")).toUpperCase() };
-    if (parts[0] === "bons") return { page: "bons" };
-    return { page: "crc" };
+    if (parts[0] === "bons") return { page: "bons", listPage: pageNo(parts, 1) };
+    if (parts[0] === "p") return { page: "crc", listPage: pageNo(parts, 0) };
+    return { page: "crc", listPage: 1 };
+  }
+
+  function pageNo(parts, at) {
+    if (parts[at] !== "p") return 1;
+    const n = Number(parts[at + 1]);
+    if (!Number.isFinite(n) || n < 1) return 1;
+    return Math.min(20, Math.floor(n));
   }
 
   const Look = {
@@ -435,6 +443,24 @@
     </a>`;
   }
 
+  const PAGE = 8;
+
+  function slicePage(rows, current) {
+    const pages = Math.max(1, Math.ceil(rows.length / PAGE) || 1);
+    const here = Math.min(pages, Math.max(1, current || 1));
+    return { here, rows: rows.slice((here - 1) * PAGE, here * PAGE), count: rows.length };
+  }
+
+  function pagesHtml(count, here, href) {
+    const pages = Math.ceil(count / PAGE);
+    if (pages <= 1) return "";
+    let links = "";
+    for (let i = 1; i <= pages; i++) {
+      links += `<a href="${href(i)}"${i === here ? ' class="on" aria-current="page"' : ""}>${i}</a>`;
+    }
+    return `<nav class="pages" aria-label="Pages">${links}</nav>`;
+  }
+
   function homeHtml(state, rate) {
     const stats = state.stats || {};
     const pool = state.pool || {};
@@ -443,6 +469,7 @@
       .filter((token) => token.tick !== "BONS")
       .sort((a, b) => (Number(b.market_cap_usd) || 0) - (Number(a.market_cap_usd) || 0));
     const height = stats.indexer && stats.indexer.height;
+    const swapPage = slicePage(trades, state.listPage);
     return `
       <h1>BONS</h1>
       <p class="lede">Swap BONS for bitcoin.</p>
@@ -454,7 +481,8 @@
         <div class="stat"><span class="k">Fees, 24h</span><span class="v">${pool.fees_24h_sats ? moneyHtml(pool.fees_24h_sats, rate) : "—"}</span></div>
       </div>
       <h2>Latest swaps</h2>
-      <div class="list">${trades.length ? trades.slice(0, 6).map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swaps came back.</p>`}</div>
+      <div class="list">${swapPage.rows.length ? swapPage.rows.map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swaps came back.</p>`}</div>
+      ${pagesHtml(swapPage.count, swapPage.here, (i) => i === 1 ? "#/bons" : "#/bons/p/" + i)}
       <h2>Launched on BONS</h2>
       <div class="list">${tokens.length ? tokens.map(coinRow).join("") : `<p class="note">No launches came back.</p>`}</div>`;
   }
@@ -527,7 +555,7 @@
       ["AXBT", "", "—", axbtHolders],
       ["BONS", "Swap for bitcoin.", usd(stats.price_per_token_usd), ""],
     ].filter((row) => !q || row[0].includes(q));
-    const moves = q ? [] : ((state.history && state.history.items) || []).map(moveRow).filter(Boolean).slice(0, 5);
+    const movePage = q ? { rows: [], here: 1, count: 0 } : slicePage(((state.history && state.history.items) || []).map(moveRow).filter(Boolean), state.listPage);
     const launches = q ? shown : [];
     return `
       <h1>${q ? "Matching " + esc(q) : "CRC-20"}</h1>
@@ -535,7 +563,7 @@
       <div class="list">
         ${mains.map((row) => mainCoin(row[0], row[1], row[2], row[3], row[0] === "BONS" ? "#/bons" : `#/coin/${row[0]}`)).join("")}
       </div>
-      ${moves.length ? `<h2>Latest</h2><div class="list">${moves.join("")}</div>` : ""}
+      ${movePage.rows.length ? `<h2>Latest</h2><div class="list">${movePage.rows.join("")}</div>${pagesHtml(movePage.count, movePage.here, (i) => i === 1 ? "#/" : "#/p/" + i)}` : ""}
       ${launches.length ? `<h2>Launched on BONS</h2><div class="list">${launches.map(coinRow).join("")}</div>` : ""}
       ${q && !mains.length && !launches.length ? `<p class="note">Nothing matches ${esc(q)}.</p>` : ""}`;
   }
@@ -772,22 +800,22 @@
         const [stats, pool, feed, tokens] = await Promise.all([
           api({ p: "stats" }).catch(() => null),
           api({ p: "pool", tick: "BONS" }).catch(() => null),
-          api({ p: "trades", limit: "12" }).catch(() => ({ trades: [] })),
+          api({ p: "trades", limit: "48" }).catch(() => ({ trades: [] })),
           coins().catch(() => []),
         ]);
         rememberRate(stats);
-        app.innerHTML = homeHtml({ stats, pool, trades: feed, tokens, error: !stats && !pool }, rateNow);
+        app.innerHTML = homeHtml({ stats, pool, trades: feed, tokens, listPage: route.listPage, error: !stats && !pool }, rateNow);
       } else {
         const [stats, tokens, leaf, axbt, history] = await Promise.all([
           api({ p: "stats" }).catch(() => null),
           coins().catch(() => []),
           api({ p: "garden", what: "stats", tick: "LEAF" }).catch(() => null),
           api({ p: "garden", what: "stats", tick: "AXBT" }).catch(() => null),
-          api({ p: "garden", what: "history", limit: "20" }).catch(() => null),
+          api({ p: "garden", what: "history", limit: "48" }).catch(() => null),
         ]);
         rememberRate(stats);
         const failed = !stats && !(tokens && tokens.length) && !leaf;
-        app.innerHTML = crcHtml({ stats, tokens, leaf, axbt, history, rate: rateNow, error: failed }, route.page === "find" ? route.q : "");
+        app.innerHTML = crcHtml({ stats, tokens, leaf, axbt, history, listPage: route.listPage, rate: rateNow, error: failed }, route.page === "find" ? route.q : "");
       }
     } catch {
       app.innerHTML = `<p class="warn">This did not load. Try again in a moment.</p>`;
