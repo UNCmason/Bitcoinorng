@@ -1,5 +1,6 @@
 (function (root) {
   const BONS_ORANGE = "#F7931A";
+  const ORNG_ORANGE = "#E8590C";
 
   function esc(value) {
     return String(value ?? "")
@@ -327,7 +328,8 @@
     if (parts[0] === "tx" && parts[1]) return { page: "tx", txid: decodeURIComponent(parts[1]).toLowerCase() };
     if (parts[0] === "address" && parts[1]) return { page: "address", address: decodeURIComponent(parts[1]) };
     if (parts[0] === "find") return { page: "find", q: decodeURIComponent(parts.slice(1).join("/")).toUpperCase() };
-    return { page: "home" };
+    if (parts[0] === "bons") return { page: "bons" };
+    return { page: "crc" };
   }
 
   const Look = {
@@ -342,7 +344,7 @@
   const app = document.getElementById("app");
   const form = document.getElementById("find");
   const input = document.getElementById("q");
-  const colors = { BONS: BONS_ORANGE };
+  const colors = { BONS: BONS_ORANGE, ORNG: ORNG_ORANGE };
   let coinCache = null;
   let rateNow = null;
 
@@ -402,35 +404,24 @@
   function coinRow(token) {
     const tick = token.tick;
     const price = usd(token.market_price_usd || token.price_usd);
+    const pinned = colors[tick] ? ` style="color:${esc(colors[tick])}"` : "";
     return `<a class="row" data-color data-tickrow="${esc(tick)}" style="--coin:${esc(colorOf(tick))}" href="#/token/${esc(tick)}">
-      ${token.image_url ? picture(tick) : mark(tick)}
-      <div><span class="tick">${esc(tick)}</span><p>${esc(coinLine(token))}</p></div>
+      ${tick === "ORNG" && token.image_url ? picture(tick, 32) : token.image_url ? picture(tick) : mark(tick)}
+      <div><span class="tick"${pinned}>${esc(tick)}</span><p>${esc(coinLine(token))}</p></div>
       <div class="side">${esc(price)}<small>${token.holders_count != null ? esc(num(token.holders_count, 0)) + " holders" : ""}</small></div>
     </a>`;
   }
 
-  function homeHtml(state, filter, rate) {
+  function homeHtml(state, rate) {
     const stats = state.stats || {};
     const pool = state.pool || {};
     const tokens = state.tokens || [];
     const trades = (state.trades && state.trades.trades) || [];
-    const q = (filter || "").toUpperCase();
-    const shown = tokens
-      .filter((token) => token.tick !== "BONS")
-      .filter((token) => !q || token.tick.includes(q))
-      .sort((a, b) => (Number(b.market_cap_usd) || 0) - (Number(a.market_cap_usd) || 0));
     const fee = feeSentence(state.fees);
     const height = stats.indexer && stats.indexer.height;
-    const bons = {
-      tick: "BONS",
-      status: "live",
-      market_price_usd: stats.price_per_token_usd,
-      holders_count: null,
-    };
-    const showBons = !q || "BONS".includes(q);
     return `
-      <h1>${q ? "Coins matching " + esc(q) : "Look up a coin on Bitcoin."}</h1>
-      <p class="lede">Search a coin name, a transaction, or a wallet. A swap pays real bitcoin and finishes in one Bitcoin transaction.</p>
+      <h1>BONS on Bitcoin.</h1>
+      <p class="lede">People post a bitcoin price first. A swap fills those prices and pays bitcoin in the same Bitcoin transaction. Other CRC-20 coins are on the CRC-20 tab.</p>
       ${state.error ? `<p class="warn">The BONS service did not answer. Reload in a moment.</p>` : ""}
       <div class="stats">
         <div class="stat"><span class="k">BONS price</span><span class="v">${esc(usd(stats.price_per_token_usd))}</span></div>
@@ -440,10 +431,35 @@
       </div>
       <p class="note">${esc(swapStory(pool, rate))}${fee ? " " + esc(fee) : ""}${pool.fees_24h_sats ? " Fees recorded in the last day: " + esc(moneyText(pool.fees_24h_sats, rate)) + "." : ""}</p>
       <h2>Latest swaps</h2>
-      <div class="list">${trades.length ? trades.slice(0, 12).map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swaps came back.</p>`}</div>
-      <h2>Coins</h2>
+      <div class="list">${trades.length ? trades.slice(0, 12).map((trade) => swapRow(trade, rate)).join("") : `<p class="note">No swaps came back.</p>`}</div>`;
+  }
+
+  function crcHtml(state, filter) {
+    const stats = state.stats || {};
+    const tokens = state.tokens || [];
+    const q = (filter || "").toUpperCase();
+    const shown = tokens
+      .filter((token) => token.tick !== "BONS")
+      .filter((token) => !q || token.tick.includes(q))
+      .sort((a, b) => (Number(b.market_cap_usd) || 0) - (Number(a.market_cap_usd) || 0));
+    const selling = tokens.filter((token) => token.status === "minting").length;
+    const closed = tokens.filter((token) => token.status === "closed").length;
+    const trading = Math.max(0, tokens.length - selling - closed);
+    const height = stats.indexer && stats.indexer.height;
+    const showBons = !q || "BONS".includes(q);
+    return `
+      <h1>${q ? "Coins matching " + esc(q) : "CRC-20 on Bitcoin."}</h1>
+      <p class="lede">A CRC-20 coin is a note written on Bitcoin. Search a coin, a transaction, or a wallet. Bitcoin swaps for BONS are on the next tab.</p>
+      ${state.error ? `<p class="warn">The coin list did not answer. Reload in a moment.</p>` : ""}
+      <div class="stats">
+        <div class="stat"><span class="k">Coins</span><span class="v">${tokens.length ? esc(String(tokens.length)) : "—"}</span></div>
+        <div class="stat"><span class="k">Still selling</span><span class="v">${tokens.length ? esc(String(selling)) : "—"}</span></div>
+        <div class="stat"><span class="k">Mint finished</span><span class="v">${tokens.length ? esc(String(trading)) : "—"}</span></div>
+        <div class="stat"><span class="k">Closed</span><span class="v">${tokens.length ? esc(String(closed)) : "—"}</span></div>
+      </div>
+      ${height ? `<p class="note">Read at Bitcoin block ${esc(num(height, 0))}.</p>` : ""}
       <div class="list">
-        ${showBons ? `<a class="row" data-tickrow="BONS" style="--coin:${BONS_ORANGE}" href="#/token/BONS">${mark("BONS")}<div><span class="tick" style="color:${BONS_ORANGE}">BONS</span><p>The bitcoin swap. A trade fills prices that are already posted.</p></div><div class="side">${esc(usd(bons.market_price_usd))}<small>${stats.market_cap_usd ? esc(usd(stats.market_cap_usd)) + " market" : ""}</small></div></a>` : ""}
+        ${showBons ? `<a class="row" data-tickrow="BONS" style="--coin:${BONS_ORANGE}" href="#/token/BONS">${mark("BONS")}<div><span class="tick" style="color:${BONS_ORANGE}">BONS</span><p>The bitcoin swap. Open the BONS tab to read the prices people posted.</p></div><div class="side">${esc(usd(stats.price_per_token_usd))}<small>${stats.market_cap_usd ? esc(usd(stats.market_cap_usd)) + " market" : ""}</small></div></a>` : ""}
         ${shown.map(coinRow).join("")}
         ${q && !showBons && !shown.length ? `<p class="note">No launched coin matches ${esc(q)}.</p>` : ""}
       </div>`;
@@ -509,12 +525,12 @@
       ${marker ? `<p>${esc(markerSentence(marker))}</p>` : ""}
       ${detail ? `<p class="note">The note records how many coins moved. The swap record is what says this was paid in bitcoin.</p>` : ""}
       ${protocol + lp > 0 ? `<p>Recorded fees on this fill: ${moneyHtml(lp, rate)} to the price poster and ${moneyHtml(protocol, rate)} to the protocol.</p>` : ""}
-      ${legs.length ? `<h2>Price steps filled</h2><table><thead><tr><th>Who posted it</th><th>Coin</th><th>Paid</th><th>Price</th></tr></thead><tbody>${legs.map((leg) => `<tr>
+      ${legs.length ? `<h2>Price steps filled</h2><div class="sheet"><table><thead><tr><th>Who posted it</th><th>Coin</th><th>Paid</th><th>Price</th></tr></thead><tbody>${legs.map((leg) => `<tr>
         <td>${leg.maker ? `<a href="#/address/${esc(leg.maker)}">${esc(shortId(leg.maker, 8, 4))}</a>` : "—"}</td>
         <td>${esc(tokenAmount(leg.amount))} ${esc(leg.ticker || "")}</td>
         <td>${moneyHtml(leg.sats, rate)}</td>
         <td>${leg.sats_per_token ? eachHtml(leg.sats_per_token, rate) : "—"}</td>
-      </tr>`).join("")}</tbody></table>` : ""}
+      </tr>`).join("")}</tbody></table></div>` : ""}
       <a class="btn" href="https://mempool.space/tx/${esc(txid)}">Open on mempool.space</a>
       <p class="note mono">${esc(txid)}</p>`;
   }
@@ -542,12 +558,12 @@
         ${portfolio.covenant_address ? `<p class="note">Receive coins at the wallet address above. A second address, ${esc(shortId(portfolio.covenant_address, 10, 6))}, is where those coins are stored. Coins sent to that second address can get stuck.</p>` : ""}
       `}
       <h2>Balances</h2>
-      ${tokens.length ? `<table><thead><tr><th>Coin</th><th>Available</th><th>In the swap</th></tr></thead><tbody>${tokens.map((token) => `<tr>
+      ${tokens.length ? `<div class="sheet"><table><thead><tr><th>Coin</th><th>Available</th><th>In the swap</th></tr></thead><tbody>${tokens.map((token) => `<tr>
         <td><a href="#/token/${esc(token.tick)}">${esc(token.tick)}</a></td>
         <td>${esc(tokenAmount(token.available || token.balance))}</td>
         <td>${esc(tokenAmount(token.in_pool))}</td>
-      </tr>`).join("")}</tbody></table>` : `<p class="note">No CRC-20 balance came back for this wallet.</p>`}
-      ${seals.length ? `<h2>Pieces of each coin</h2><p class="note">Each receive is its own small piece. A send spends those pieces.</p><table><thead><tr><th>Coin</th><th>Amount</th><th>Where it sits</th></tr></thead><tbody>${seals.map((seal) => `<tr><td>${esc(seal.tick)}</td><td>${esc(tokenAmount(seal.amount))}</td><td>${esc(whereCoin(seal))}</td></tr>`).join("")}</tbody></table>` : ""}
+      </tr>`).join("")}</tbody></table></div>` : `<p class="note">No CRC-20 balance came back for this wallet.</p>`}
+      ${seals.length ? `<h2>Pieces of each coin</h2><p class="note">Each receive is its own small piece. A send spends those pieces.</p><div class="sheet"><table><thead><tr><th>Coin</th><th>Amount</th><th>Where it sits</th></tr></thead><tbody>${seals.map((seal) => `<tr><td>${esc(seal.tick)}</td><td>${esc(tokenAmount(seal.amount))}</td><td>${esc(whereCoin(seal))}</td></tr>`).join("")}</tbody></table></div>` : ""}
       <h2>Swaps this wallet made</h2>
       <p class="note">These are swaps this wallet started, among the latest 100. A price this wallet only posted shows up on the other side of someone else's swap.</p>
       <div class="list">${mine.length ? mine.map((trade) => swapRow(trade, rate)).join("") : `<p class="note">None of the latest 100 swaps were started here.</p>`}</div>
@@ -563,9 +579,11 @@
           canvas.height = 24;
           const ctx = canvas.getContext("2d", { willReadFrequently: true });
           ctx.drawImage(img, 0, 0, 24, 24);
+          const tickName = img.getAttribute("data-tick");
+          if (tickName === "ORNG") return;
           const color = pickColor(ctx.getImageData(0, 0, 24, 24).data);
-          colors[img.getAttribute("data-tick")] = color;
-          app.querySelectorAll(`[data-tickrow="${img.getAttribute("data-tick")}"]`).forEach((row) => {
+          colors[tickName] = color;
+          app.querySelectorAll(`[data-tickrow="${tickName}"]`).forEach((row) => {
             row.style.setProperty("--coin", color);
             const name = row.querySelector(".tick, h1");
             if (name) name.style.color = color;
@@ -621,7 +639,7 @@
         ]);
         rememberRate(stats);
         app.innerHTML = addressHtml(route.address, portfolio, feed, rateNow);
-      } else {
+      } else if (route.page === "bons") {
         const [stats, pool, feed, fees, tokens] = await Promise.all([
           api({ p: "stats" }).catch(() => null),
           api({ p: "pool", tick: "BONS" }).catch(() => null),
@@ -631,12 +649,25 @@
         ]);
         rememberRate(stats);
         const failed = !stats && !tokens.length;
-        app.innerHTML = homeHtml({ stats, pool, trades: feed, fees, tokens, error: failed }, route.page === "find" ? route.q : "", rateNow);
+        app.innerHTML = homeHtml({ stats, pool, trades: feed, fees, tokens, error: failed }, rateNow);
+      } else {
+        const [stats, tokens] = await Promise.all([
+          api({ p: "stats" }).catch(() => null),
+          coins().catch(() => []),
+        ]);
+        rememberRate(stats);
+        const failed = !stats && !(tokens && tokens.length);
+        app.innerHTML = crcHtml({ stats, tokens, error: failed }, route.page === "find" ? route.q : "");
       }
     } catch {
       app.innerHTML = `<p class="warn">The BONS service did not answer. Reload in a moment.</p>`;
     }
     tint();
+    const onBons = route.page === "bons";
+    const crcTab = document.getElementById("mode-crc");
+    const bonsTab = document.getElementById("mode-bons");
+    if (crcTab) crcTab.classList.toggle("on", !onBons);
+    if (bonsTab) bonsTab.classList.toggle("on", onBons);
   }
 
   form.addEventListener("submit", async (event) => {
