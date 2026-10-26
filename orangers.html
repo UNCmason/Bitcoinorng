@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>O'Rangers — $ORNG</title>
-<meta name="description" content="O'Rangers are pictures, head to shoulders. One hundred are drawn. Mint is not open, and none are on Bitcoin yet.">
+<meta name="description" content="O'Rangers. One hundred pictures. Mint opens 2 November 2026.">
 <link rel="icon" href="/img/mark.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -25,13 +25,18 @@ img{max-width:100%;height:auto}
 main{width:min(980px,100%);margin:0 auto;padding:28px 16px 48px}
 h1{font-size:clamp(32px,6vw,48px);line-height:1.05;margin:0 0 12px;letter-spacing:-.03em}
 h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mute);margin:28px 0 10px}
-.lede{margin:0 0 8px;max-width:680px}
-.lede.quiet{color:var(--mute)}
-.mint{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--btc);border-radius:14px;padding:16px 16px 14px;margin:22px 0}
+.mint{background:var(--card);border:1px solid var(--line);border-left:5px solid var(--btc);border-radius:14px;padding:16px 16px 14px;margin:18px 0 22px}
 .mint h2{margin:0 0 8px;letter-spacing:0;text-transform:none;color:var(--ink);font-size:22px}
 .mint p{margin:0 0 8px}
 .mint p:last-child{margin:0}
-#rate{color:var(--mute);font-size:14px}
+.clock{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:clamp(26px,6vw,40px);font-weight:700;letter-spacing:.03em;font-variant-numeric:tabular-nums;margin:0 0 6px}
+.when{color:var(--mute);font-size:13px;font-weight:700;margin:0 0 8px}
+#rate,#mint-chain{color:var(--mute);font-size:14px}
+#mint-fit,#mint-who{font-weight:700}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.btn{border:0;border-radius:999px;padding:10px 14px;background:var(--ink);color:#fff;font-weight:800;cursor:pointer}
+.btn.btc{background:var(--btc);color:#1c1915}
+.pick[hidden]{display:none}
 .filters{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 12px}
 .filters label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:800;color:var(--mute)}
 .filters select{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:10px;padding:8px 10px;font:600 14px Montserrat,sans-serif}
@@ -71,13 +76,24 @@ footer a{color:var(--ink);font-weight:700}
 </header>
 <main>
   <h1>O'Rangers</h1>
-  <p class="lede">Bitcoin is orange. $ORNG is the coin, and it trades on BONS. O'Rangers are the people: one picture each, from the head to the shoulders.</p>
-  <p class="lede quiet">A picture on Bitcoin is one inscription. The collection note for that is CRC-21. Look still reads coins. It does not list these pictures.</p>
   <section class="mint" aria-labelledby="mint-title">
-    <h2 id="mint-title">Mint is not open</h2>
-    <p>One hundred pictures are drawn. The full set stays under 999. None of them are on Bitcoin yet. Mint opens only after the collection is signed onto Bitcoin, from a wallet, not from this site.</p>
-    <p>You will pick a head, glasses, and a cloth color, see the picture, and pay in your own wallet. Bitcoin is $9 at the live rate. $ORNG is 20% under that, $7.20. Those are two Bitcoin steps. The $ORNG amount is not listed here, because that price is not on the board right now.</p>
+    <h2 id="mint-title">Mint opens in</h2>
+    <p class="clock" id="clock" role="timer">—</p>
+    <p class="when" id="when">2 Nov 2026, 00:00 UTC</p>
+    <p id="mint-note">Free if your wallet minted $ORNG. Otherwise $9 in bitcoin, or $7.20 in $ORNG.</p>
     <p id="rate"></p>
+    <div id="mint-open" hidden>
+      <div class="filters">
+        <label>Head <select id="mhat" aria-label="Head"></select></label>
+        <label>Glasses <select id="mglasses" aria-label="Glasses"></select></label>
+        <label>Cloth color <select id="mcolor" aria-label="Cloth color"></select></label>
+      </div>
+      <div class="pick" id="mint-preview" hidden></div>
+      <p id="mint-fit"></p>
+      <p id="mint-chain">Nothing is sent from this page.</p>
+      <div class="row" id="mint-connect"></div>
+      <p id="mint-who"></p>
+    </div>
   </section>
   <h2>The hundred</h2>
   <div class="filters">
@@ -89,7 +105,7 @@ footer a{color:var(--ink);font-weight:700}
   <div id="pick"></div>
   <div class="grid" id="grid"></div>
 </main>
-<footer>Pictures on this page are drawings. They are not inscriptions yet. <a href="/faq.html">Questions</a> · <a href="/trade.html">Trade</a></footer>
+<footer>Drawings, not inscriptions yet. <a href="/faq.html">Questions</a></footer>
 <script src="/orangers.js"></script>
 </body>
 </html>
