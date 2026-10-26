@@ -2,6 +2,9 @@
   "name": "orng-site",
   "private": true,
   "dependencies": {
-    "@upstash/redis": "^1.34.0"
+    "@bitcoinerlab/secp256k1": "1.2.0",
+    "@upstash/redis": "^1.34.0",
+    "bitcoinjs-lib": "6.1.7",
+    "ecpair": "2.1.0"
   }
 }
